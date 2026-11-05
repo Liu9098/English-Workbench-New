@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Christmas Emergency · 高职英语角色扮演抽签</title>
+<style>
+  :root{
+    --bg:#0F1A30;
+    --card:#F5F1E8;
+    --green:#2C663E;
+    --red:#B82626;
+    --gold:#D4AF69;
+    --ink:#33312c;
+    --panel:rgba(255,255,255,0.04);
+    --panel-border:rgba(212,175,105,0.28);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    background:var(--bg);
+    color:#ECE7DA;
+    overflow:hidden;
+    font-size:20px;
+  }
+  /* ===== 背景层 ===== */
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .window-glow{
+    position:fixed;right:6%;bottom:4%;width:42vw;height:46vh;z-index:0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(120,160,200,0.18), transparent 45%),
+      radial-gradient(circle at 65% 60%, rgba(90,130,180,0.14), transparent 40%),
+      radial-gradient(circle at 50% 80%, rgba(150,180,210,0.12), transparent 50%);
+    filter:blur(8px);opacity:0.5;border-radius:14px;
+    box-shadow:inset 0 0 60px rgba(140,180,220,0.15);
+    pointer-events:none;
+  }
+  .corner{position:fixed;width:130px;height:130px;z-index:2;pointer-events:none;opacity:0.92;}
+  .corner.tl{top:-6px;left:-6px;}
+  .corner.tr{top:-6px;right:-6px;transform:scaleX(-1);}
+  .corner.bl{bottom:-6px;left:-6px;transform:scaleY(-1);}
+  .corner.br{bottom:-6px;right:-6px;transform:scale(-1,-1);}
+  .light-string{
+    position:fixed;top:0;left:0;right:0;height:26px;z-index:2;pointer-events:none;
+    background-image:radial-gradient(circle at 12px 18px, var(--gold) 0 2.4px, transparent 3px);
+    background-size:48px 26px;
+    filter:drop-shadow(0 0 5px rgba(212,175,105,0.8));
+    animation:twinkle 3.5s infinite ease-in-out;
+  }
+  @keyframes twinkle{0%,100%{opacity:.6;}50%{opacity:1;}}
+
+  /* ===== 舞台布局 ===== */
+  .stage{position:relative;z-index:3;display:flex;flex-direction:column;height:100vh;padding:14px 18px 12px;}
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:6px 4px 12px;border-bottom:1px solid var(--panel-border);flex-wrap:wrap;
+  }
+  .title{font-family:"Georgia","Times New Roman",serif;font-size:24px;color:var(--gold);letter-spacing:.5px;font-weight:700;text-shadow:0 0 12px rgba(212,175,105,.35);}
+  .title span{font-size:20px;color:#ECE7DA;font-family:"PingFang SC",sans-serif;margin-left:10px;font-weight:600;}
+  .controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .controls label{font-size:18px;color:#cfc8b6;}
+  select,button{font-family:inherit;font-size:18px;}
+  select{
+    background:rgba(15,26,48,.9);color:#ECE7DA;border:1px solid var(--panel-border);
+    border-radius:8px;padding:7px 12px;outline:none;
+  }
+  .btn{
+    background:linear-gradient(180deg,rgba(44,102,62,.9),rgba(30,72,46,.9));
+    color:#fff;border:1px solid rgba(212,175,105,.5);border-radius:8px;
+    padding:7px 14px;cursor:pointer;transition:.2s;
+  }
+  .btn:hover{filter:brightness(1.12);}
+  .mode-switch{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--panel-border);border-radius:20px;padding:6px 14px;font-size:18px;color:#cfc8b6;}
+  .mode-switch input{width:40px;height:20px;appearance:none;background:#3a4a66;border-radius:20px;position:relative;cursor:pointer;outline:none;transition:.2s;}
+  .mode-switch input:checked{background:var(--green);}
+  .mode-switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#ECE7DA;transition:.2s;}
+  .mode-switch input:checked::after{left:22px;}
+
+  main{flex:1;display:grid;grid-template-columns:1.05fr 1.25fr 0.95fr;gap:16px;padding:14px 2px;min-height:0;}
+  .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;display:flex;flex-direction:column;min-height:0;backdrop-filter:blur(2px);}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 14px;border-bottom:1px solid var(--panel-border);font-size:22px;color:var(--gold);font-weight:600;flex-wrap:wrap;}
+  .panel-head .sub{font-size:16px;color:#a9a290;font-weight:400;}
+  .panel-head button{font-size:16px;padding:5px 11px;}
+
+  /* ===== 左侧卡牌阵列 ===== */
+  .slot-grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:14px;padding:14px;align-content:start;}
+  .slot{cursor:pointer;aspect-ratio:3/4.4;perspective:900px;position:relative;}
+  .slot-inner{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;}
+  .slot.flipped .slot-inner{transform:rotateY(180deg);}
+  .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:9px;overflow:hidden;display:flex;flex-direction:column;}
+
+  /* ===== 卡背：纯色圣诞红 + 金边 + 绿内描边 + 四角冬青 ===== */
+  .face.back{
+    background:linear-gradient(160deg,#9E2B25,#7A1B18);
+    border:2px solid var(--gold);
+    box-shadow:inset 0 0 0 3px rgba(44,102,62,.9), 0 6px 16px rgba(0,0,0,.45);
+    align-items:center;justify-content:center;
+  }
+  .face.back .num{position:absolute;top:7%;left:9%;font-family:"Georgia",serif;font-weight:700;color:rgba(255,255,255,.85);font-size:13px;z-index:3;}
+  .corner-holly{position:absolute;width:21%;z-index:2;}
+  .corner-holly.ch-tl{top:4%;left:4%;}
+  .corner-holly.ch-tr{top:4%;right:4%;transform:scaleX(-1);}
+  .corner-holly.ch-bl{bottom:4%;left:4%;transform:scaleY(-1);}
+  .corner-holly.ch-br{bottom:4%;right:4%;transform:scale(-1,-1);}
+  .back-type{position:absolute;top:50%;left:50%;transform:translate(-50%,-135%);font-size:30px;color:var(--gold);letter-spacing:6px;}
+  .back-name{position:absolute;top:50%;left:50%;transform:translate(-50%,35%);background:rgba(0,0,0,.28);padding:3px 14px;border-radius:14px;font-size:15px;color:#fff;letter-spacing:2px;white-space:nowrap;}
+  .stamp{position:absolute;top:6px;right:4px;z-index:6;color:var(--gold);border:2px solid var(--gold);border-radius:6px;font-size:14px;padding:2px 6px;transform:rotate(12deg);font-weight:700;background:rgba(15,26,48,.55);letter-spacing:1px;}
+
+  .face.front{
+    background:linear-gradient(160deg,#F7F3EA,#EFE8D8);
+    border:2px solid var(--gold);
+    box-shadow:inset 0 0 0 1px rgba(212,175,105,.6), 0 4px 10px rgba(0,0,0,.4);
+    transform:rotateY(180deg);
+    padding:8px;color:var(--ink);
+  }
+  .face.front .ftier,.fc-front .ftier{color:var(--gold);font-size:15px;text-align:center;letter-spacing:1px;}
+  .face.front .fname,.fc-front .fname{font-weight:700;text-align:center;font-size:15px;color:#5a3a1a;margin:2px 0 4px;line-height:1.2;}
+  .face.front .fmeta,.fc-front .fmeta{font-size:13px;color:#6b6354;text-align:center;}
+  /* 中间大卡正面：任务内容 20px；英文剧情梗概 20px；中文剧情对照 16px（仅作用于 .fc-front，不影响左侧小卡） */
+  .fc-front .ftier{font-size:20px;}
+  .fc-front .fname{font-size:20px;line-height:1.25;}
+  .fc-front .fmeta{font-size:20px;}
+  .fc-front .fplot-en{font-size:20px;margin-top:16px;line-height:1.75;text-align:left;color:#2f2a22;}
+  .fc-front .fplot-cn{font-size:16px;margin-top:10px;line-height:1.7;text-align:left;color:#6b6354;}
+
+  /* ===== 中间详情区 ===== */
+  .mid{flex:1;display:flex;flex-direction:column;}
+  .mid-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;min-height:0;overflow:auto;}
+  .flip-card{width:min(380px,82%);perspective:1400px;cursor:pointer;}
+  .flip-card .fc-inner{position:relative;width:100%;height:auto;transition:transform .9s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;}
+  .flip-card.flipped .fc-inner{transform:rotateY(180deg);}
+  .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:auto;}
+  /* 中间大卡背面：纯色圣诞红 + 金边 + 绿内描边 */
+  .fc-back{
+    background:linear-gradient(160deg,#9E2B25,#7A1B18);
+    border:2px solid var(--gold);
+    box-shadow:inset 0 0 0 3px rgba(44,102,62,.9), 0 12px 34px rgba(0,0,0,.55);
+  }
+  .fc-back .back-icon{position:absolute;top:33%;left:50%;transform:translate(-50%,-50%);width:30%;z-index:3;}
+  .heart-icon{display:block;width:100%;height:auto;}
+  .fc-back .hint{position:absolute;top:60%;left:50%;transform:translateX(-50%);font-size:16px;color:#f3e6c8;font-family:"Georgia",serif;letter-spacing:1px;white-space:nowrap;}
+
+  .fc-front{
+    background:linear-gradient(160deg,#F7F3EA,#EFE8D8);
+    border:2px solid var(--gold);
+    box-shadow:inset 0 0 0 1px rgba(212,175,105,.6), 0 12px 34px rgba(0,0,0,.55);
+    transform:rotateY(180deg);padding:32px 28px;color:var(--ink);
+    position:relative;inset:auto;width:100%;box-sizing:border-box;min-height:430px;
+  }
+
+
+  /* ===== 右侧记录 ===== */
+  .rec-list{flex:1;overflow:auto;padding:10px 12px;}
+  .rec{border:1px solid rgba(212,175,105,.25);border-radius:9px;padding:9px 11px;margin-bottom:9px;background:rgba(255,255,255,.03);}
+  .rec .r1{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+  .rec .rid{font-family:"Georgia",serif;font-weight:700;color:var(--gold);font-size:20px;}
+  .rec .rstatus{font-size:15px;padding:3px 9px;border-radius:6px;}
+  .rec .rstatus.done{background:rgba(44,102,62,.25);color:#bfe6c9;border:1px solid rgba(44,102,62,.5);}
+  .rec .rstatus.none{background:rgba(120,120,120,.18);color:#b9b2a3;border:1px solid rgba(160,160,160,.3);}
+  .rec .rname{font-size:20px;color:#ECE7DA;margin:4px 0 2px;font-weight:600;}
+  .rec .rmeta{font-size:16px;color:#a9a290;display:flex;justify-content:space-between;gap:6px;}
+  .rec-empty{color:#9a937f;font-size:18px;text-align:center;padding:30px 10px;}
+
+  /* ===== 底部 ===== */
+  footer{display:flex;justify-content:center;gap:22px;padding:12px 0 4px;}
+  .btn-big{font-size:22px;padding:12px 34px;border-radius:30px;font-weight:600;}
+  .btn-reset{background:linear-gradient(180deg,#7a2a2a,#5a1d1d);border:1px solid rgba(212,175,105,.5);color:#fff;cursor:pointer;}
+  .btn-rubric{background:linear-gradient(180deg,#caa24f,#a9822f);border:1px solid rgba(255,255,255,.3);color:#2a1f08;cursor:pointer;}
+  .btn-big:hover{filter:brightness(1.1);}
+
+  /* ===== 弹窗 ===== */
+  .overlay{position:fixed;inset:0;z-index:20;background:rgba(5,9,18,.72);display:none;align-items:center;justify-content:center;padding:24px;}
+  .overlay.show{display:flex;}
+  .modal{background:linear-gradient(160deg,#16233f,#0F1A30);border:1px solid var(--panel-border);border-radius:16px;max-width:720px;width:100%;max-height:86vh;overflow:auto;padding:26px 30px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .modal h2{font-family:"Georgia",serif;color:var(--gold);font-size:24px;margin-bottom:6px;text-align:center;}
+  .modal .close{float:right;cursor:pointer;color:#cfc8b6;font-size:24px;line-height:1;background:none;border:none;}
+  .rubric-table{width:100%;border-collapse:collapse;margin-top:14px;}
+  .rubric-table th,.rubric-table td{border:1px solid rgba(212,175,105,.3);padding:11px 13px;font-size:19px;vertical-align:top;text-align:left;}
+  .rubric-table th{background:rgba(44,102,62,.25);color:var(--gold);}
+  .rubric-table .dim{color:#bfe6c9;font-weight:700;}
+  .rubric-table .score{color:var(--gold);font-weight:700;white-space:nowrap;}
+  .rubric-note{margin-top:14px;font-size:16px;color:#a9a290;text-align:center;}
+  .cls-row{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid rgba(212,175,105,.18);}
+  .cls-row input{background:rgba(15,26,48,.9);color:#ECE7DA;border:1px solid var(--panel-border);border-radius:6px;padding:6px 9px;font-size:18px;}
+  .cls-row .nm{flex:1;}
+  .cls-row .gc{width:70px;}
+  .cls-add{margin-top:12px;display:flex;gap:8px;}
+  .cls-add input{background:rgba(15,26,48,.9);color:#ECE7DA;border:1px solid var(--panel-border);border-radius:6px;padding:7px 10px;font-size:18px;}
+  .cls-add .nm{flex:1;}
+  .cls-add .gc{width:80px;}
+  .modal .actions{margin-top:18px;text-align:center;font-size:16px;color:#a9a290;}
+
+  /* ===== 评分说明弹窗（白底金边） ===== */
+  .modal-light{background:#F7F3EA;border:2px solid var(--gold);border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:28px 34px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#33312c;}
+  .modal-light h2{font-family:"Georgia",serif;color:#7a4a1e;font-size:24px;margin-bottom:16px;text-align:center;}
+  .modal-light .close{float:right;cursor:pointer;color:#7a4a1e;font-size:24px;line-height:1;background:none;border:none;}
+  .modal-light .si-sec{margin-bottom:18px;}
+  .modal-light .si-sec h3{font-size:20px;color:var(--green);margin-bottom:8px;border-left:4px solid var(--gold);padding-left:10px;}
+  .modal-light .si-line{font-size:20px;line-height:1.9;color:#3a352c;}
+  .modal-light .si-line b{color:var(--red);}
+  .modal-light .si-formula{font-size:21px;line-height:2;color:#3a352c;background:rgba(212,175,105,.12);border:1px solid rgba(212,175,105,.4);border-radius:10px;padding:12px 16px;margin-top:6px;}
+  .modal-light .si-formula b{color:#7a4a1e;}
+  .modal-light .si-ex{font-size:20px;line-height:2;margin-top:8px;}
+  .modal-light .si-ex .c1{color:#2C663E;font-weight:700;}
+  .modal-light .si-ex .c2{color:#B82626;font-weight:700;}
+  .modal-light .si-ex .c3{color:#a9822f;font-weight:700;}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(20,30,50,.95);border:1px solid var(--gold);color:var(--gold);padding:10px 22px;border-radius:24px;z-index:30;font-size:14px;opacity:0;transition:.3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(212,175,105,.35);border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<div class="window-glow"></div>
+<div class="light-string"></div>
+<div class="corner tl" id="cornerTL"></div>
+<div class="corner tr" id="cornerTR"></div>
+<div class="corner bl" id="cornerBL"></div>
+<div class="corner br" id="cornerBR"></div>
+
+<div class="stage">
+  <header>
+    <div class="title">A Christmas Emergency<span>角色扮演抽签</span></div>
+    <div class="controls">
+      <label>授课班级</label>
+      <select id="classSel"></select>
+      <button class="btn" id="mgrBtn">管理班级</button>
+      <div class="mode-switch" title="不放回：抽走的任务锁定不可重复；放回：可反复抽取">
+        <span>不放回</span>
+        <input type="checkbox" id="modeToggle">
+        <span>放回</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panel-head">
+        <span>任务卡池 · 9 张</span>
+        <span class="sub" id="grpInfo"></span>
+      </div>
+      <div class="slot-grid" id="slotGrid"></div>
+    </section>
+
+    <section class="panel mid">
+      <div class="panel-head"><span>任务详情</span><span class="sub">点击卡牌翻面</span></div>
+      <div class="mid-wrap">
+        <div class="flip-card" id="midCard">
+          <div class="fc-inner">
+            <div class="fc-face fc-back" id="midBack">
+              <div class="back-icon" id="midBackIcon"></div>
+              <div class="hint">点击左侧卡牌背面抽签</div>
+            </div>
+            <div class="fc-face fc-front" id="midFront"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head">
+        <span>本班抽签记录</span>
+        <span>
+          <button class="btn" id="copyBtn">复制导出</button>
+          <button class="btn" id="clearBtn">清空</button>
+        </span>
+      </div>
+      <div class="rec-list" id="recList"></div>
+    </aside>
+  </main>
+
+  <footer>
+    <button class="btn-big btn-reset" id="resetBtn">重置抽签</button>
+    <button class="btn-big btn-rubric" id="rubricBtn">查看评价量规</button>
+    <button class="btn-big btn-rubric" id="scoreInfoBtn">评分说明</button>
+  </footer>
+</div>
+
+<!-- 班级管理弹窗 -->
+<div class="overlay" id="clsOverlay">
+  <div class="modal">
+    <button class="close" data-close="clsOverlay">×</button>
+    <h2>班级与小组管理</h2>
+    <div id="clsList"></div>
+    <div class="cls-add">
+      <input class="nm" id="newClsName" placeholder="新班级名称，如 临床医学3班">
+      <input class="gc" id="newClsGroups" type="number" min="1" max="9" value="6" title="小组个数">
+      <span style="color:#a9a290;font-size:12px;">组</span>
+      <button class="btn" id="addClsBtn">新增</button>
+    </div>
+    <div class="actions"><span style="color:#a9a290;font-size:12px;">提示：小组个数决定左侧卡牌数量，每组抽取 1 张任务卡。</span></div>
+  </div>
+</div>
+
+<!-- 评价量规弹窗 -->
+<div class="overlay" id="rubricOverlay">
+  <div class="modal">
+    <button class="close" data-close="rubricOverlay">×</button>
+    <h2>角色扮演评价量规（总分 100 分）</h2>
+    <table class="rubric-table">
+      <thead>
+        <tr><th>维度</th><th>基础 ★</th><th>提升 ★★</th><th>拓展 ★★★</th><th>分值</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="dim">语言表达</td>
+          <td>能用课文核心句型，少量卡顿，表意清楚</td>
+          <td>熟练运用场景交际句型，卡顿少，发音流畅</td>
+          <td>灵活自主表达观点，流利自然</td>
+          <td class="score">40</td>
+        </tr>
+        <tr>
+          <td class="dim">角色演绎</td>
+          <td>角色身份明确，完成基础剧情</td>
+          <td>语气情绪贴合人物，剧情逻辑完整</td>
+          <td>人物心理刻画到位，创编合理有感染力</td>
+          <td class="score">25</td>
+        </tr>
+        <tr>
+          <td class="dim">团队协作</td>
+          <td>全员开口参与分工</td>
+          <td>分工清晰，互动自然</td>
+          <td>小组配合默契，即兴互动，全员深度参与</td>
+          <td class="score">15</td>
+        </tr>
+        <tr>
+          <td class="dim">价值素养</td>
+          <td>体现善意、温暖的主题</td>
+          <td>共情弱势群体，懂得换位思考</td>
+          <td>辩证思考人文关怀与现实困境，有独立思考</td>
+          <td class="score">20</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="rubric-note">本次活动占平时分 10%。不同任务按难度加权换算，详见「评分说明」。</div>
+  </div>
+</div>
+
+<!-- 评分说明弹窗（白底金边） -->
+<div class="overlay" id="scoreInfoOverlay">
+  <div class="modal-light">
+    <button class="close" data-close="scoreInfoOverlay">×</button>
+    <h2>评分说明</h2>
+    <div class="si-sec">
+      <h3>一、原始评分（满分 100）</h3>
+      <div class="si-line">语言表达 <b>40</b> ｜ 角色演绎 <b>25</b> ｜ 团队协作 <b>15</b> ｜ 价值素养 <b>20</b></div>
+    </div>
+    <div class="si-sec">
+      <h3>二、难度加权换算</h3>
+      <div class="si-formula"><b>最终得分 = 原始分 × 难度系数</b></div>
+      <div class="si-line" style="margin-top:10px;">
+        ★ 基础任务：系数 <b>0.85</b><br>
+        ★★ 提升任务：系数 <b>1.00</b><br>
+        ★★★ 拓展任务：系数 <b>1.15</b>
+      </div>
+      <div class="si-ex">
+        <div class="si-sec" style="margin:0;"><b>示例：原始分 80</b></div>
+        <span class="c1">基础：80 × 0.85 = 68</span> ｜ <span class="c2">提升：80 × 1.00 = 80</span> ｜ <span class="c3">拓展：80 × 1.15 = 92</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== 数据：9 张任务卡 ===================== */
+const TASKS = [
+  {id:'1-1', tier:1, title:'分诊台接诊',
+   roles:['分诊护士','无家可归母亲','孩子'],
+   plot:'圣诞夜，一位母亲带着四个孩子来到急诊分诊台，谎称全家生病，只为寻找一处温暖的地方。',
+   plotEn:'On Christmas Eve, a mother brings her four children to the ER triage desk, pretending the whole family is sick — only to find a warm place to stay.',
+   lines:['Are you all sick?','Take your time; it’s warm here.']},
+  {id:'1-2', tier:1, title:'护士站发现真相',
+   roles:['护士A','护士B','登记文员','母亲'],
+   plot:'文员登记信息，发现表格没有家庭地址，几位护士讨论，意识到一家人无家可归。',
+   plotEn:'The clerk registers their info and finds no home address on the form. The nurses discuss and realize the family is homeless.',
+   lines:['No address — they were homeless.']},
+  {id:'1-3', tier:1, title:'离别感谢',
+   roles:['护士团队','母亲','四岁小孩'],
+   plot:'一家人准备离开急诊室，医护送上小礼物，孩子折返拥抱护士表达感谢。',
+   plotEn:'As the family is about to leave the ER, the staff give them small gifts. The youngest child runs back to hug a nurse and say thank you.',
+   lines:['Thanks for being our angels today.']},
+  {id:'2-1', tier:2, title:'护士察觉症状疑点',
+   roles:['分诊护士','妈妈','两个孩子'],
+   plot:'护士问诊，敏锐察觉症状描述很奇怪，保持职业礼貌，不直接戳穿谎言，追问病情细节。',
+   plotEn:'The nurse takes the patient’s history and keenly notices the odd symptom descriptions. She stays professional and polite, probing for details without exposing the lie.',
+   lines:[]},
+  {id:'2-2', tier:2, title:'医护团队讨论帮扶',
+   roles:['护士A','护士B','护士长','登记文员'],
+   plot:'圣诞值班医护发现一家人无家可归，情绪从抱怨圣诞加班，转变为讨论帮扶方案；讨论三点：是否呼叫医生、是否提供食物、是否赠送小礼物。',
+   plotEn:'On Christmas shift, the staff discover the family is homeless. Their mood shifts from complaining about working on Christmas to discussing how to help — calling a doctor, offering food, and giving small gifts.',
+   lines:[]},
+  {id:'2-3', tier:2, title:'候诊区的旁观者',
+   roles:['护士','妈妈','两个孩子','路过的病人家属'],
+   plot:'一家人在候诊区取暖，其他家属投来不同目光，护士悄悄送来食物与礼品，妈妈内心愧疚又感动。',
+   plotEn:'The family warms up in the waiting area while other visitors give them mixed looks. A nurse quietly brings food and gifts; the mother feels both guilty and moved.',
+   lines:[]},
+  {id:'3-1', tier:3, title:'职业迁移·社区志愿服务',
+   roles:['社区志愿者2人','单亲妈妈','孩子'],
+   plot:'脱离医院场景，圣诞节社区服务点偶遇这个家庭，志愿者沟通询问困难，提供取暖、食物帮扶。',
+   plotEn:'Away from the hospital, volunteers meet this family at a Christmas community service point, ask about their struggles, and offer warmth and food.',
+   lines:[]},
+  {id:'3-2', tier:3, title:'思辨两难：资源与善意',
+   roles:['分诊护士','值班医生','妈妈'],
+   plot:'医生质疑占用急诊医疗资源，护士为这个家庭辩护，双方英文思辨：医疗资源秩序和人文关怀如何平衡。',
+   plotEn:'A doctor questions the use of ER resources; a nurse defends the family. They debate in English how to balance medical order and human compassion.',
+   lines:[]},
+  {id:'3-3', tier:3, title:'多年以后偶遇续写',
+   roles:['长大的四岁孩子','当年的分诊护士'],
+   plot:'多年后的圣诞，两人偶遇，回忆当年急诊室的故事，表达感恩，自主创编英文对话。',
+   plotEn:'Years later on Christmas, the two meet by chance, recall the ER story, express gratitude, and create their own English dialogue.',
+   lines:[]}
+];
+const TIER_LABEL = {1:'★ 基础',2:'★★ 提升',3:'★★★ 拓展'};
+const TIER_NAME = {1:'基础任务',2:'提升任务',3:'拓展任务'};
+function tierStars(t){return '★'.repeat(t)+'☆'.repeat(3-t);}
+function getTask(id){return TASKS.find(t=>t.id===id);}
+
+/* ===================== 装饰 SVG ===================== */
+function heartCrossSVG(){
+  return `<svg class="heart-icon" viewBox="0 0 120 112" xmlns="http://www.w3.org/2000/svg">
+    <path d="M60 100C31 78 20 62 20 46c0-13 10-23 23-23 7 0 13 4 17 11 4-7 10-11 17-11 13 0 23 10 23 23 0 16-11 32-40 54Z"
+      fill="#E84B4B" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+function hollySVG(){
+  return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 36 Q12 26 18 14 Q20 22 26 14 Q32 26 24 36 Q22 30 20 36Z" fill="#2C663E"/>
+    <path d="M20 36 Q14 30 8 28 Q16 26 20 30Z" fill="#2C663E"/>
+    <path d="M20 36 Q26 30 32 28 Q24 26 20 30Z" fill="#2C663E"/>
+    <circle cx="14" cy="20" r="3" fill="#B82626"/>
+    <circle cx="22" cy="16" r="3" fill="#B82626"/>
+    <circle cx="20" cy="24" r="3" fill="#B82626"/>
+  </svg>`;
+}
+function decorateCorners(){
+  const html = hollySVG();
+  ['cornerTL','cornerTR','cornerBL','cornerBR'].forEach(id=>{
+    document.getElementById(id).innerHTML = html;
+  });
+}
+
+/* ===================== 存储 ===================== */
+const LS_CLS='xmas_classes_v2', LS_DRAW='xmas_draws_v2', LS_MODE='xmas_mode_v1', LS_PLAN='xmas_plans_v2';
+function loadClasses(){
+  let c = JSON.parse(localStorage.getItem(LS_CLS)||'null');
+  if(!Array.isArray(c)||!c.length){
+    // 与《高职英语一》学情分析预置的五个授课班保持一致
+    c=[
+      {id:'c1',name:'2026级临床医学6班',groupCount:6},
+      {id:'c2',name:'临床医学4班',groupCount:6},
+      {id:'c3',name:'临床医学5班',groupCount:6},
+      {id:'c4',name:'口腔医学技术1班',groupCount:6},
+      {id:'c5',name:'中医康复1班',groupCount:6}
+    ];
+    localStorage.setItem(LS_CLS,JSON.stringify(c));
+  }
+  return c;
+}
+function saveClasses(){localStorage.setItem(LS_CLS,JSON.stringify(classes));}
+function loadDraws(){return JSON.parse(localStorage.getItem(LS_DRAW)||'{}')||{};}
+function saveDraws(){localStorage.setItem(LS_DRAW,JSON.stringify(draws));}
+
+let classes = loadClasses();
+let draws = loadDraws();
+let plans = JSON.parse(localStorage.getItem(LS_PLAN)||'{}'); // {classId:[tier,...]} 每个槽位所属难度层级
+let currentClassId = classes[0].id;
+let mode = localStorage.getItem(LS_MODE)||'noReplace'; // noReplace | replace
+let activeTaskId = null;
+
+/* 抽签难度配比：保证 基础≥3、提升≥2、拓展≥1（组数≥6 时严格满足；组数不足按比例下调） */
+function tierPlan(N){
+  N=Math.max(1,N|0);
+  let b=3,i=2,e=1;
+  if(N<6){
+    b=Math.min(3,N); let r=N-b; i=Math.min(2,r); r-=i; e=Math.min(1,r);
+  }else{
+    let extra=N-6; const order=['b','i','e']; let k=0;
+    while(extra>0){ if(order[k%3]==='b')b++; else if(order[k%3]==='i')i++; else e++; extra--; k++; }
+  }
+  let arr=[]; for(let x=0;x<b;x++)arr.push(1); for(let x=0;x<i;x++)arr.push(2); for(let x=0;x<e;x++)arr.push(3);
+  // 随机打散顺序，使难度分布不固定在前几张
+  for(let x=arr.length-1;x>0;x--){const y=Math.floor(Math.random()*(x+1));[arr[x],arr[y]]=[arr[y],arr[x]];}
+  return arr;
+}
+function getPlan(cid,N){
+  if(!plans[cid] || plans[cid].length!==N){ plans[cid]=tierPlan(N); localStorage.setItem(LS_PLAN,JSON.stringify(plans)); }
+  return plans[cid];
+}
+function savePlans(){localStorage.setItem(LS_PLAN,JSON.stringify(plans));}
+
+/* ===================== 状态工具 ===================== */
+function currentClass(){return classes.find(c=>c.id===currentClassId);}
+function classDraws(cid){
+  if(!draws[cid]){const c=classes.find(x=>x.id===cid); draws[cid]=new Array(c?c.groupCount:6).fill(null);}
+  // 同步长度（班级组数变更时）
+  const c=classes.find(x=>x.id===cid);
+  if(c && draws[cid].length!==c.groupCount){
+    const arr=new Array(c.groupCount).fill(null);
+    for(let i=0;i<Math.min(arr.length,draws[cid].length);i++) arr[i]=draws[cid][i];
+    draws[cid]=arr; saveDraws();
+  }
+  return draws[cid];
+}
+function drawnTaskIds(cid){
+  return classDraws(cid).filter(d=>d&&d.taskId).map(d=>d.taskId);
+}
+
+/* ===================== 渲染：班级下拉 ===================== */
+function renderClassSelect(){
+  const sel=document.getElementById('classSel');
+  sel.innerHTML='';
+  classes.forEach(c=>{
+    const o=document.createElement('option');o.value=c.id;o.textContent=c.name+'（'+c.groupCount+'组）';
+    if(c.id===currentClassId)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+/* ===================== 渲染：左侧卡牌阵列 ===================== */
+function slotBackHTML(tier,idx){
+  return `<div class="face back">
+    <div class="num">No.${idx+1}</div>
+    <div class="corner-holly ch-tl">${hollySVG()}</div>
+    <div class="corner-holly ch-tr">${hollySVG()}</div>
+    <div class="corner-holly ch-bl">${hollySVG()}</div>
+    <div class="corner-holly ch-br">${hollySVG()}</div>
+    <div class="back-type">${tierStars(tier)}</div>
+    <div class="back-name">${TIER_NAME[tier]}</div>
+  </div>`;
+}
+function slotFrontHTML(task){
+  return `<div class="face front">
+    <div class="ftier">${tierStars(task.tier)} ${TIER_LABEL[task.tier]}</div>
+    <div class="fname">${task.title}</div>
+    <div class="fmeta">卡 ${task.id}</div>
+  </div>`;
+}
+function renderSlots(){
+  const grid=document.getElementById('slotGrid');
+  grid.innerHTML='';
+  const c=currentClass();
+  const d=classDraws(currentClassId);
+  const plan=getPlan(currentClassId,c.groupCount);
+  document.getElementById('grpInfo').textContent = `本班 ${c.groupCount} 组 · 已抽 ${d.filter(x=>x).length} / 剩余 ${c.groupCount-d.filter(x=>x).length}（基础≥3·提升≥2·拓展≥1）`;
+  d.forEach((entry,idx)=>{
+    const slot=document.createElement('div');
+    slot.className='slot';
+    let inner='';
+    if(entry){ // 已抽取
+      const t=getTask(entry.taskId);
+      slot.classList.add('flipped');
+      inner = slotBackHTML(t.tier,idx) + slotFrontHTML(t);
+      slot.innerHTML=`<div class="slot-inner">${inner}</div><div class="stamp">已抽取</div>`;
+    }else{
+      // 未抽取：背面显示该槽位所属难度层级（星号 + 基础/提升/拓展任务）
+      inner = slotBackHTML(plan[idx],idx);
+      slot.innerHTML=`<div class="slot-inner">${inner}</div>`;
+    }
+    slot.addEventListener('click',()=>onSlotClick(idx,slot));
+    grid.appendChild(slot);
+  });
+}
+
+function onSlotClick(idx,slotEl){
+  const d=classDraws(currentClassId);
+  const entry=d[idx];
+  if(entry && mode==='noReplace'){
+    // 不放回：已锁定，仅展示
+    setActive(entry.taskId,true);
+    toast('该卡已抽取且锁定（不放回模式）');
+    return;
+  }
+  if(entry && mode==='replace'){
+    // 放回：重新抽取
+    doDraw(idx,slotEl);
+    return;
+  }
+  // 未抽取
+  doDraw(idx,slotEl);
+}
+
+function doDraw(idx,slotEl){
+  const c=currentClass();
+  const d=classDraws(currentClassId);
+  const plan=getPlan(currentClassId,c.groupCount);
+  const tier=plan[idx]||1;
+  let pool = TASKS.filter(t=>t.tier===tier).map(t=>t.id);
+  if(mode==='noReplace'){
+    // 不放回：排除同层级其他槽已抽的任务（同层级任务不足时允许重复）
+    const others = d.filter((e,j)=>j!==idx && e && plan[j]===tier).map(e=>e.taskId);
+    let avail = pool.filter(id=>!others.includes(id));
+    if(!avail.length) avail = pool;
+    pool = avail;
+  }
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  d[idx]={taskId:pick,time:Date.now()};
+  saveDraws();
+  renderSlots();
+  renderRecords();
+  setActive(pick,false);
+  toast('已抽签：'+getTask(pick).title);
+}
+
+/* ===================== 中间详情：3D 翻转 ===================== */
+function setActive(taskId,alreadyFlipped){
+  activeTaskId=taskId;
+  const t=getTask(taskId);
+  const mid=document.getElementById('midCard');
+  const front=document.getElementById('midFront');
+  front.innerHTML = `
+    <div class="ftier">${tierStars(t.tier)} ${TIER_LABEL[t.tier]}</div>
+    <div class="fname">${t.title}</div>
+    <div class="fmeta">卡 ${t.id}</div>
+    ${t.roles.length?`<div class="fmeta">角色：${t.roles.join('、')}</div>`:''}
+    ${t.plotEn?`<div class="fplot-en">${t.plotEn}</div>`:''}
+    ${t.plot?`<div class="fplot-cn">${t.plot}</div>`:''}
+  `;
+  // 先回到背面，再翻到正面，形成抽签动画
+  mid.classList.remove('flipped');
+  if(alreadyFlipped){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>mid.classList.add('flipped')));
+  }else{
+    setTimeout(()=>mid.classList.add('flipped'),60);
+  }
+}
+document.getElementById('midCard').addEventListener('click',()=>{
+  document.getElementById('midCard').classList.toggle('flipped');
+});
+
+/* ===================== 右侧记录 ===================== */
+function renderRecords(){
+  const list=document.getElementById('recList');
+  const d=classDraws(currentClassId);
+  const c=currentClass();
+  if(!d.some(x=>x)){
+    list.innerHTML='<div class="rec-empty">本班尚未抽签。<br>点击左侧卡牌背面即可抽签。</div>';
+    return;
+  }
+  list.innerHTML='';
+  d.forEach((entry,i)=>{
+    const div=document.createElement('div');div.className='rec';
+    if(entry){
+      const t=getTask(entry.taskId);
+      const time=new Date(entry.time);
+      const ts=`${time.getMonth()+1}/${time.getDate()} ${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
+      div.innerHTML=`
+        <div class="r1"><span class="rid">第${i+1}组 · 卡${t.id}</span><span class="rstatus done">已抽取</span></div>
+        <div class="rname">${t.title} <span style="color:var(--gold)">${tierStars(t.tier)}</span></div>
+        <div class="rmeta"><span>${TIER_LABEL[t.tier]}</span><span>${ts}</span></div>`;
+    }else{
+      div.innerHTML=`
+        <div class="r1"><span class="rid">第${i+1}组</span><span class="rstatus none">未抽取</span></div>
+        <div class="rname" style="color:#9a937f;">— 待抽签 —</div>
+        <div class="rmeta"><span>—</span><span>—</span></div>`;
+    }
+    list.appendChild(div);
+  });
+}
+
+/* ===================== 复制导出 ===================== */
+function buildExportText(){
+  const c=currentClass();
+  const d=classDraws(currentClassId);
+  const now=new Date();
+  let s=`A Christmas Emergency · 角色扮演抽签记录\n`;
+  s+=`班级：${c.name}（${c.groupCount} 组）\n`;
+  s+=`导出时间：${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}\n`;
+  s+=`模式：${mode==='noReplace'?'不放回':'放回'}\n`;
+  s+=`--------------------------------\n`;
+  let any=false;
+  d.forEach((e,i)=>{
+    if(e){any=true;const t=getTask(e.taskId);const time=new Date(e.time);
+      s+=`第${i+1}组｜卡${t.id}｜${t.title}｜${tierStars(t.tier)}｜已抽取｜${time.getMonth()+1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2,'0')}\n`;
+    }else{
+      s+=`第${i+1}组｜—｜—｜—｜未抽取｜—\n`;
+    }
+  });
+  if(!any)s+=`（暂无任何抽签记录）\n`;
+  return s;
+}
+function copyExport(){
+  const text=buildExportText();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast('本班抽签记录已复制到剪贴板')).catch(()=>fallbackCopy(text));
+  }else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast('本班抽签记录已复制');}catch(e){toast('复制失败，请手动选择');}
+  document.body.removeChild(ta);
+}
+
+/* ===================== 重置 / 清空 ===================== */
+function resetClass(){
+  if(!confirm('确认重置当前班级【'+currentClass().name+'】的全部抽签？所有卡牌将翻回背面。'))return;
+  draws[currentClassId]=new Array(currentClass().groupCount).fill(null);
+  saveDraws();
+  activeTaskId=null;
+  document.getElementById('midCard').classList.remove('flipped');
+  renderSlots();renderRecords();
+  toast('已重置 '+currentClass().name+' 的抽签');
+}
+function clearRecords(){
+  if(!confirm('确认清空当前班级【'+currentClass().name+'】的抽签记录？'))return;
+  draws[currentClassId]=new Array(currentClass().groupCount).fill(null);
+  saveDraws();
+  activeTaskId=null;
+  document.getElementById('midCard').classList.remove('flipped');
+  renderSlots();renderRecords();
+  toast('已清空记录');
+}
+
+/* ===================== 班级管理与 CRUD ===================== */
+function renderClsList(){
+  const box=document.getElementById('clsList');box.innerHTML='';
+  classes.forEach(c=>{
+    const row=document.createElement('div');row.className='cls-row';
+    row.innerHTML=`
+      <input class="nm" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" data-f="name">
+      <input class="gc" type="number" min="1" max="9" value="${c.groupCount}" data-id="${c.id}" data-f="groupCount" title="小组个数">
+      <button class="btn" data-del="${c.id}">删除</button>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const c=classes.find(x=>x.id===inp.dataset.id);
+      if(inp.dataset.f==='name'){c.name=inp.value.trim()||c.name;}
+      else{c.groupCount=Math.max(1,Math.min(9,parseInt(inp.value)||1));}
+      saveClasses();renderClassSelect();renderSlots();renderRecords();
+    });
+  });
+  box.querySelectorAll('button[data-del]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      if(classes.length<=1){toast('至少保留一个班级');return;}
+      if(!confirm('删除该班级及其抽签记录？'))return;
+      const id=b.dataset.del;
+      classes=classes.filter(x=>x.id!==id);
+      delete draws[id];
+      saveClasses();saveDraws();
+      if(currentClassId===id)currentClassId=classes[0].id;
+      renderClassSelect();renderClsList();renderSlots();renderRecords();
+    });
+  });
+}
+function addClass(){
+  const nm=document.getElementById('newClsName').value.trim();
+  const gc=Math.max(1,Math.min(9,parseInt(document.getElementById('newClsGroups').value)||6));
+  if(!nm){toast('请输入班级名称');return;}
+  const id='c'+Date.now();
+  classes.push({id,name:nm,groupCount:gc});
+  draws[id]=new Array(gc).fill(null);
+  saveClasses();saveDraws();
+  document.getElementById('newClsName').value='';
+  renderClassSelect();renderClsList();
+  toast('已新增班级：'+nm);
+}
+
+/* ===================== 弹窗与提示 ===================== */
+function openOverlay(id){document.getElementById(id).classList.add('show');}
+function closeOverlay(id){document.getElementById(id).classList.remove('show');}
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ===================== 背景粒子（雪 + 星） ===================== */
+function initParticles(){
+  const cv=document.getElementById('particles');const ctx=cv.getContext('2d');
+  let W,H,snow=[],stars=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  resize();addEventListener('resize',resize);
+  for(let i=0;i<140;i++)snow.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+0.4,s:Math.random()*0.6+0.2,o:Math.random()*0.5+0.3});
+  for(let i=0;i<90;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.3,tw:Math.random()*Math.PI,sp:Math.random()*0.03+0.01});
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(s=>{const a=0.35+0.55*Math.abs(Math.sin(s.tw+=s.sp));ctx.fillStyle='rgba(212,175,105,'+a.toFixed(2)+')';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();});
+    ctx.fillStyle='rgba(255,255,255,0.75)';
+    snow.forEach(f=>{f.y+=f.s;f.x+=Math.sin(f.y*0.01)*0.3;if(f.y>H){f.y=-5;f.x=Math.random()*W;}ctx.globalAlpha=f.o;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,7);ctx.fill();});
+    ctx.globalAlpha=1;
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+/* ===================== 初始化 ===================== */
+function init(){
+  decorateCorners();
+  initParticles();
+  document.getElementById('midBackIcon').innerHTML=heartCrossSVG();
+  // 模式开关
+  const mt=document.getElementById('modeToggle');
+  mt.checked=(mode==='replace');
+  mt.addEventListener('change',()=>{mode=mt.checked?'replace':'noReplace';localStorage.setItem(LS_MODE,mode);toast(mode==='replace'?'已切换：放回模式':'已切换：不放回模式');});
+  // 班级选择
+  renderClassSelect();
+  document.getElementById('classSel').addEventListener('change',e=>{
+    currentClassId=e.target.value;activeTaskId=null;
+    document.getElementById('midCard').classList.remove('flipped');
+    renderSlots();renderRecords();
+  });
+  // 按钮
+  document.getElementById('mgrBtn').addEventListener('click',()=>{renderClsList();openOverlay('clsOverlay');});
+  document.getElementById('addClsBtn').addEventListener('click',addClass);
+  document.getElementById('resetBtn').addEventListener('click',resetClass);
+  document.getElementById('clearBtn').addEventListener('click',clearRecords);
+  document.getElementById('copyBtn').addEventListener('click',copyExport);
+  document.getElementById('rubricBtn').addEventListener('click',()=>openOverlay('rubricOverlay'));
+  document.getElementById('scoreInfoBtn').addEventListener('click',()=>openOverlay('scoreInfoOverlay'));
+  document.querySelectorAll('.close').forEach(b=>b.addEventListener('click',()=>closeOverlay(b.dataset.close)));
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
+  // 初始渲染
+  renderSlots();renderRecords();
+}
+/* 嵌入模式：隐藏自身大标题，避免与工作台的标题/返回键重复 */
+if(location.search.indexOf('embed')>=0){ const __t=document.querySelector('.title'); if(__t) __t.style.display='none'; }
+init();
+</script>
+</body>
+</html>
