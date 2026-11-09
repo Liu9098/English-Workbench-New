@@ -85,7 +85,7 @@
 
   /* ===== 左侧卡牌阵列 ===== */
   .slot-grid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:14px;padding:14px;align-content:start;}
-  .slot{cursor:pointer;aspect-ratio:3/4.4;perspective:900px;position:relative;}
+  .slot{cursor:pointer;aspect-ratio:3/5;perspective:900px;position:relative;}
   .slot-inner{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.4,.15,.2,1);transform-style:preserve-3d;}
   .slot.flipped .slot-inner{transform:rotateY(180deg);}
   .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:9px;overflow:hidden;display:flex;flex-direction:column;}
@@ -105,7 +105,7 @@
   .corner-holly.ch-br{bottom:4%;right:4%;transform:scale(-1,-1);}
   .back-type{position:absolute;top:50%;left:50%;transform:translate(-50%,-135%);font-size:30px;color:var(--gold);letter-spacing:6px;}
   .back-name{position:absolute;top:50%;left:50%;transform:translate(-50%,35%);background:rgba(0,0,0,.28);padding:3px 14px;border-radius:14px;font-size:15px;color:#fff;letter-spacing:2px;white-space:nowrap;}
-  .stamp{position:absolute;top:6px;right:4px;z-index:6;color:var(--gold);border:2px solid var(--gold);border-radius:6px;font-size:14px;padding:2px 6px;transform:rotate(12deg);font-weight:700;background:rgba(15,26,48,.55);letter-spacing:1px;}
+  .stamp{position:absolute;bottom:5px;right:5px;z-index:6;color:var(--gold);border:1px solid var(--gold);border-radius:5px;font-size:11px;padding:1px 5px;transform:rotate(-8deg);font-weight:700;background:rgba(15,26,48,.8);letter-spacing:1px;}
 
   .face.front{
     background:linear-gradient(160deg,#F7F3EA,#EFE8D8);
@@ -117,12 +117,19 @@
   .face.front .ftier,.fc-front .ftier{color:var(--gold);font-size:15px;text-align:center;letter-spacing:1px;}
   .face.front .fname,.fc-front .fname{font-weight:700;text-align:center;font-size:15px;color:#5a3a1a;margin:2px 0 4px;line-height:1.2;}
   .face.front .fmeta,.fc-front .fmeta{font-size:13px;color:#6b6354;text-align:center;}
+  /* 左侧小卡正面补充：英文剧名 + 中英文剧情概括（2026-11-09） */
+  .face.front{overflow:hidden;padding:8px 9px 26px;}
+  .face.front .fname-en{font-family:"Georgia","Times New Roman",serif;font-style:italic;font-size:11px;color:var(--gold);text-align:center;line-height:1.25;margin:1px 0 3px;}
+  .face.front .fmeta{font-size:12px;margin:0 0 3px;}
+  .face.front .fplot-en{font-size:16px;line-height:1.55;color:#2f2a22;text-align:left;margin-top:5px;}
+  .face.front .fplot-cn{font-size:16px;line-height:1.6;color:#6b6354;text-align:left;margin-top:5px;}
   /* 中间大卡正面：任务内容 20px；英文剧情梗概 20px；中文剧情对照 16px（仅作用于 .fc-front，不影响左侧小卡） */
   .fc-front .ftier{font-size:20px;}
   .fc-front .fname{font-size:20px;line-height:1.25;}
   .fc-front .fmeta{font-size:20px;}
   .fc-front .fplot-en{font-size:20px;margin-top:16px;line-height:1.75;text-align:left;color:#2f2a22;}
   .fc-front .fplot-cn{font-size:16px;margin-top:10px;line-height:1.7;text-align:left;color:#6b6354;}
+  .fc-front .fname-en{font-family:"Georgia","Times New Roman",serif;font-size:15px;font-style:italic;color:var(--gold);text-align:center;margin:-1px 0 4px;line-height:1.2;}
 
   /* ===== 中间详情区 ===== */
   .mid{flex:1;display:flex;flex-direction:column;}
@@ -228,6 +235,8 @@
       <label>授课班级</label>
       <select id="classSel"></select>
       <button class="btn" id="mgrBtn">管理班级</button>
+      <label>小组数量</label>
+      <select id="groupCountSel"></select>
       <div class="mode-switch" title="不放回：抽走的任务锁定不可重复；放回：可反复抽取">
         <span>不放回</span>
         <input type="checkbox" id="modeToggle">
@@ -239,7 +248,7 @@
   <main>
     <section class="panel">
       <div class="panel-head">
-        <span>任务卡池 · 9 张</span>
+        <span>任务卡池 · 7 张</span>
         <span class="sub" id="grpInfo"></span>
       </div>
       <div class="slot-grid" id="slotGrid"></div>
@@ -287,7 +296,7 @@
     <div id="clsList"></div>
     <div class="cls-add">
       <input class="nm" id="newClsName" placeholder="新班级名称，如 临床医学3班">
-      <input class="gc" id="newClsGroups" type="number" min="1" max="9" value="6" title="小组个数">
+      <input class="gc" id="newClsGroups" type="number" min="1" max="20" value="6" title="小组个数">
       <span style="color:#a9a290;font-size:12px;">组</span>
       <button class="btn" id="addClsBtn">新增</button>
     </div>
@@ -369,56 +378,53 @@
 <script>
 /* ===================== 数据：9 张任务卡 ===================== */
 const TASKS = [
-  {id:'1-1', tier:1, title:'分诊台接诊',
-   roles:['分诊护士','无家可归母亲','孩子'],
-   plot:'圣诞夜，一位母亲带着四个孩子来到急诊分诊台，谎称全家生病，只为寻找一处温暖的地方。',
-   plotEn:'On Christmas Eve, a mother brings her four children to the ER triage desk, pretending the whole family is sick — only to find a warm place to stay.',
-   lines:['Are you all sick?','Take your time; it’s warm here.']},
-  {id:'1-2', tier:1, title:'护士站发现真相',
-   roles:['护士A','护士B','登记文员','母亲'],
-   plot:'文员登记信息，发现表格没有家庭地址，几位护士讨论，意识到一家人无家可归。',
-   plotEn:'The clerk registers their info and finds no home address on the form. The nurses discuss and realize the family is homeless.',
-   lines:['No address — they were homeless.']},
-  {id:'1-3', tier:1, title:'离别感谢',
-   roles:['护士团队','母亲','四岁小孩'],
-   plot:'一家人准备离开急诊室，医护送上小礼物，孩子折返拥抱护士表达感谢。',
-   plotEn:'As the family is about to leave the ER, the staff give them small gifts. The youngest child runs back to hug a nurse and say thank you.',
-   lines:['Thanks for being our angels today.']},
-  {id:'2-1', tier:2, title:'护士察觉症状疑点',
-   roles:['分诊护士','妈妈','两个孩子'],
-   plot:'护士问诊，敏锐察觉症状描述很奇怪，保持职业礼貌，不直接戳穿谎言，追问病情细节。',
-   plotEn:'The nurse takes the patient’s history and keenly notices the odd symptom descriptions. She stays professional and polite, probing for details without exposing the lie.',
+  {id:'11', tier:1, title:'分诊台前', titleEn:'Before the Triage Desk',
+   roles:['Nurse Lena（护士）','Clerk Ben（登记员）','Mom Sara（母亲）','Tom（孩子）','Amy（孩子）','Jack（孩子）'],
+   plot:'圣诞急诊，一家窘迫家庭装病求取暖，护士顶住制度压力施以善意。',
+   plotEn:'On Christmas, a poor family fakes illness for warmth; nurses offer help despite hospital rules.',
    lines:[]},
-  {id:'2-2', tier:2, title:'医护团队讨论帮扶',
-   roles:['护士A','护士B','护士长','登记文员'],
-   plot:'圣诞值班医护发现一家人无家可归，情绪从抱怨圣诞加班，转变为讨论帮扶方案；讨论三点：是否呼叫医生、是否提供食物、是否赠送小礼物。',
-   plotEn:'On Christmas shift, the staff discover the family is homeless. Their mood shifts from complaining about working on Christmas to discussing how to help — calling a doctor, offering food, and giving small gifts.',
+  {id:'12', tier:1, title:'护士站的空白地址', titleEn:'Blank Address at the Nurses’ Station',
+   roles:['Nurse A（护士）','Nurse B（护士）','Admitting Clerk（登记文员）','Mother（母亲）'],
+   plot:'护士复查登记表发现住址空白，温和问询，揭开一家人无家可归的真相。',
+   plotEn:'Nurses find blank address on forms and learn the family is homeless through gentle inquiry.',
    lines:[]},
-  {id:'2-3', tier:2, title:'候诊区的旁观者',
-   roles:['护士','妈妈','两个孩子','路过的病人家属'],
-   plot:'一家人在候诊区取暖，其他家属投来不同目光，护士悄悄送来食物与礼品，妈妈内心愧疚又感动。',
-   plotEn:'The family warms up in the waiting area while other visitors give them mixed looks. A nurse quietly brings food and gifts; the mother feels both guilty and moved.',
+  {id:'13', tier:1, title:'门口的道别', titleEn:'Farewell at the Door',
+   roles:['Dr. Chen（医生）','Linda（医护）','Kate（医护）','Mia（医护）','Mother（母亲）','Emma（女孩）','Amy（女孩）'],
+   plot:'一家人准备离开，医护送上物资，小女孩折返道谢，完成交接与送别。',
+   plotEn:'The family leaves; staff give supplies. A little girl comes back to express thanks.',
    lines:[]},
-  {id:'3-1', tier:3, title:'职业迁移·社区志愿服务',
-   roles:['社区志愿者2人','单亲妈妈','孩子'],
-   plot:'脱离医院场景，圣诞节社区服务点偶遇这个家庭，志愿者沟通询问困难，提供取暖、食物帮扶。',
-   plotEn:'Away from the hospital, volunteers meet this family at a Christmas community service point, ask about their struggles, and offer warmth and food.',
+  {id:'21', tier:2, title:'可疑的症状', titleEn:'Symptoms That Didn’t Add Up',
+   roles:['NURSE（分诊护士）','MOTHER（母亲）','GIRL（女孩）','BOY（男孩）','CLERK（登记员，可选）'],
+   plot:'护士问诊察觉多处症状矛盾，看穿伪装，选择不揭穿，保护家庭尊严。',
+   plotEn:'The nurse spots inconsistent symptoms, sees through pretense and protects the family’s dignity.',
    lines:[]},
-  {id:'3-2', tier:3, title:'思辨两难：资源与善意',
-   roles:['分诊护士','值班医生','妈妈'],
-   plot:'医生质疑占用急诊医疗资源，护士为这个家庭辩护，双方英文思辨：医疗资源秩序和人文关怀如何平衡。',
-   plotEn:'A doctor questions the use of ER resources; a nurse defends the family. They debate in English how to balance medical order and human compassion.',
+  {id:'22', tier:2, title:'护士站的五分钟', titleEn:'Five Minute Scene at the Nurses’ Station',
+   roles:['Nurse A（护士）','Nurse B（护士）','Nurse C（护士）','Nurse D（护士）','Head Nurse（护士长）'],
+   plot:'护士站碰头，讨论是否呼叫医生，分工为困境家庭准备食物与礼物。',
+   plotEn:'Nurses hold a meeting, discuss treatment and prepare food & gifts for the needy family.',
    lines:[]},
-  {id:'3-3', tier:3, title:'多年以后偶遇续写',
-   roles:['长大的四岁孩子','当年的分诊护士'],
-   plot:'多年后的圣诞，两人偶遇，回忆当年急诊室的故事，表达感恩，自主创编英文对话。',
-   plotEn:'Years later on Christmas, the two meet by chance, recall the ER story, express gratitude, and create their own English dialogue.',
+  {id:'31', tier:3, title:'圣诞节特殊的急诊', titleEn:'A Special Christmas in ER',
+   roles:['Linda（护士）','Kate（护士）','Mia（登记员）','Mother（母亲）','Emma（女孩）','Amy（女孩）'],
+   plot:'圣诞急诊，医护发现家庭困境，准备礼物，联系收容所，收获孩子的感谢。',
+   plotEn:'ER staff discover a homeless family, prepare gifts and arrange shelter on Christmas.',
+   lines:[]},
+  {id:'32', tier:3, title:'十年后的重逢', titleEn:'A Christmas Reunion',
+   roles:['Emily（护理学生）','Nurse Victoria（当年分诊护士）','Sarah（年轻护士）'],
+   plot:'十年圣诞夜，当年小女孩成为护生重返急诊，传递当年收获的善意。',
+   plotEn:'Years later, the little girl turned nursing student returns and passes on kindness.',
    lines:[]}
 ];
-const TIER_LABEL = {1:'★ 基础',2:'★★ 提升',3:'★★★ 拓展'};
+const TIER_LABEL = {1:'基础',2:'提升',3:'拓展'};
 const TIER_NAME = {1:'基础任务',2:'提升任务',3:'拓展任务'};
-function tierStars(t){return '★'.repeat(t)+'☆'.repeat(3-t);}
-function getTask(id){return TASKS.find(t=>t.id===id);}
+function tierStars(t){return '★'.repeat(t);}
+const TASK_IDS = TASKS.map(t=>t.id);
+function getTask(id){
+  const t = TASKS.find(x=>String(x.id)===String(id));
+  if(t) return t;
+  // 兼容旧版任务池（旧 id 1-9）遗留的抽签记录：返回占位卡，绝不再抛错中断整个渲染
+  return {id:String(id), tier:1, title:'（旧版任务卡 '+id+'）', titleEn:'', roles:[],
+    plot:'此卡属于旧版任务池，已更新为 7 张新任务卡。请点底部「重置抽签」重新抽取。', plotEn:''};
+}
 
 /* ===================== 装饰 SVG ===================== */
 function heartCrossSVG(){
@@ -537,7 +543,9 @@ function slotFrontHTML(task){
   return `<div class="face front">
     <div class="ftier">${tierStars(task.tier)} ${TIER_LABEL[task.tier]}</div>
     <div class="fname">${task.title}</div>
-    <div class="fmeta">卡 ${task.id}</div>
+    <div class="fname-en">${task.titleEn||''}</div>
+    <div class="fplot-en">${task.plotEn||''}</div>
+    <div class="fplot-cn">${task.plot||''}</div>
   </div>`;
 }
 function renderSlots(){
@@ -615,7 +623,7 @@ function setActive(taskId,alreadyFlipped){
   front.innerHTML = `
     <div class="ftier">${tierStars(t.tier)} ${TIER_LABEL[t.tier]}</div>
     <div class="fname">${t.title}</div>
-    <div class="fmeta">卡 ${t.id}</div>
+    <div class="fname-en">${t.titleEn||''}</div>
     ${t.roles.length?`<div class="fmeta">角色：${t.roles.join('、')}</div>`:''}
     ${t.plotEn?`<div class="fplot-en">${t.plotEn}</div>`:''}
     ${t.plot?`<div class="fplot-cn">${t.plot}</div>`:''}
@@ -651,7 +659,7 @@ function renderRecords(){
       div.innerHTML=`
         <div class="r1"><span class="rid">第${i+1}组 · 卡${t.id}</span><span class="rstatus done">已抽取</span></div>
         <div class="rname">${t.title} <span style="color:var(--gold)">${tierStars(t.tier)}</span></div>
-        <div class="rmeta"><span>${TIER_LABEL[t.tier]}</span><span>${ts}</span></div>`;
+        <div class="rmeta"><span>${tierStars(t.tier)} ${TIER_LABEL[t.tier]}</span><span>${ts}</span></div>`;
     }else{
       div.innerHTML=`
         <div class="r1"><span class="rid">第${i+1}组</span><span class="rstatus none">未抽取</span></div>
@@ -722,7 +730,7 @@ function renderClsList(){
     const row=document.createElement('div');row.className='cls-row';
     row.innerHTML=`
       <input class="nm" value="${c.name.replace(/"/g,'&quot;')}" data-id="${c.id}" data-f="name">
-      <input class="gc" type="number" min="1" max="9" value="${c.groupCount}" data-id="${c.id}" data-f="groupCount" title="小组个数">
+      <input class="gc" type="number" min="1" max="20" value="${c.groupCount}" data-id="${c.id}" data-f="groupCount" title="小组个数">
       <button class="btn" data-del="${c.id}">删除</button>`;
     box.appendChild(row);
   });
@@ -730,8 +738,8 @@ function renderClsList(){
     inp.addEventListener('change',()=>{
       const c=classes.find(x=>x.id===inp.dataset.id);
       if(inp.dataset.f==='name'){c.name=inp.value.trim()||c.name;}
-      else{c.groupCount=Math.max(1,Math.min(9,parseInt(inp.value)||1));}
-      saveClasses();renderClassSelect();renderSlots();renderRecords();
+      else{c.groupCount=Math.max(1,Math.min(20,parseInt(inp.value)||1));}
+      saveClasses();renderClassSelect();renderSlots();renderRecords();syncGroupSel();
     });
   });
   box.querySelectorAll('button[data-del]').forEach(b=>{
@@ -749,14 +757,14 @@ function renderClsList(){
 }
 function addClass(){
   const nm=document.getElementById('newClsName').value.trim();
-  const gc=Math.max(1,Math.min(9,parseInt(document.getElementById('newClsGroups').value)||6));
+  const gc=Math.max(1,Math.min(20,parseInt(document.getElementById('newClsGroups').value)||6));
   if(!nm){toast('请输入班级名称');return;}
   const id='c'+Date.now();
   classes.push({id,name:nm,groupCount:gc});
   draws[id]=new Array(gc).fill(null);
   saveClasses();saveDraws();
   document.getElementById('newClsName').value='';
-  renderClassSelect();renderClsList();
+  renderClassSelect();renderClsList();syncGroupSel();
   toast('已新增班级：'+nm);
 }
 
@@ -789,20 +797,55 @@ function initParticles(){
 }
 
 /* ===================== 初始化 ===================== */
+
+function populateGroupSel(){
+  const sel=document.getElementById('groupCountSel'); if(!sel) return;
+  sel.innerHTML='';
+  for(let n=1;n<=20;n++){const o=document.createElement('option');o.value=n;o.textContent=n+' 组';sel.appendChild(o);}
+}
+function syncGroupSel(){const sel=document.getElementById('groupCountSel'); if(sel && currentClass()) sel.value=currentClass().groupCount;}
+
+function sanitizeDraws(){
+  // 任务池更新后，清掉指向已不存在任务卡的旧记录，避免渲染时中断导致卡池/记录整块空白
+  let cleaned = 0;
+  Object.keys(draws).forEach(cid=>{
+    const arr = draws[cid];
+    if(!Array.isArray(arr)){ delete draws[cid]; return; }
+    arr.forEach((e,i)=>{
+      if(e && e.taskId && TASK_IDS.indexOf(String(e.taskId)) === -1){ arr[i]=null; cleaned++; }
+    });
+  });
+  if(cleaned) saveDraws();
+  return cleaned;
+}
+
 function init(){
   decorateCorners();
   initParticles();
   document.getElementById('midBackIcon').innerHTML=heartCrossSVG();
+  // 中间大卡正面给一个默认占位，未抽签时不再是空白奶油色
+  document.getElementById('midFront').innerHTML =
+    '<div style="text-align:center;padding-top:150px;color:#8a8271;">'
+    + '<div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#7a4a1e;letter-spacing:1px;">A Christmas Emergency</div>'
+    + '<div style="font-size:15px;margin-top:12px;line-height:1.8;">点击左侧卡牌抽签后<br>这里显示 任务类型 · 剧本名称 · 剧情概况</div>'
+    + '</div>';
   // 模式开关
   const mt=document.getElementById('modeToggle');
   mt.checked=(mode==='replace');
   mt.addEventListener('change',()=>{mode=mt.checked?'replace':'noReplace';localStorage.setItem(LS_MODE,mode);toast(mode==='replace'?'已切换：放回模式':'已切换：不放回模式');});
   // 班级选择
   renderClassSelect();
+  populateGroupSel();syncGroupSel();
   document.getElementById('classSel').addEventListener('change',e=>{
     currentClassId=e.target.value;activeTaskId=null;
     document.getElementById('midCard').classList.remove('flipped');
-    renderSlots();renderRecords();
+    renderSlots();renderRecords();syncGroupSel();
+  });
+  const gs=document.getElementById('groupCountSel');
+  gs.addEventListener('change',()=>{
+    const c=currentClass(); if(!c) return;
+    c.groupCount=Math.max(1,Math.min(20,parseInt(gs.value)||1));
+    saveClasses();renderSlots();renderRecords();syncGroupSel();
   });
   // 按钮
   document.getElementById('mgrBtn').addEventListener('click',()=>{renderClsList();openOverlay('clsOverlay');});
@@ -814,8 +857,10 @@ function init(){
   document.getElementById('scoreInfoBtn').addEventListener('click',()=>openOverlay('scoreInfoOverlay'));
   document.querySelectorAll('.close').forEach(b=>b.addEventListener('click',()=>closeOverlay(b.dataset.close)));
   document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('show');}));
-  // 初始渲染
+  // 初始渲染（先清理旧版任务卡记录，再渲染）
+  const cleaned = sanitizeDraws();
   renderSlots();renderRecords();
+  if(cleaned) setTimeout(()=>toast('已清理 '+cleaned+' 条旧版抽签记录（任务池已更新）'),500);
 }
 /* 嵌入模式：隐藏自身大标题，避免与工作台的标题/返回键重复 */
 if(location.search.indexOf('embed')>=0){ const __t=document.querySelector('.title'); if(__t) __t.style.display='none'; }
