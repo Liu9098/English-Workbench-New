@@ -1,0 +1,3780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作文批阅工具 · 《高职英语一》PRETCO-A</title>
+<script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
+<style>
+  :root{
+    --bg:#f0f4f8; --panel:#fff; --ink:#1f2d3d; --muted:#55647a; --line:#dde5ef;
+    --navy:#1a3a5c; --navy2:#0f2742; --blue:#2f7fe0; --sky:#5aa2f0; --teal:#0e9f8e;
+    --green:#38a169; --orange:#e07b20; --red:#e5484d; --violet:#805ad5; --yellow:#d69e2e;
+    --shadow:0 6px 20px rgba(26,58,92,.12); --r:16px; --r2:10px;
+    --grad:linear-gradient(120deg,#1a3a5c,#2f7fe0 60%,#0e9f8e);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.65}
+  h1,h2,h3{margin:0 0 10px}
+  .top{background:var(--grad);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;box-shadow:var(--shadow)}
+  .top .tt{font-size:24px;font-weight:800;letter-spacing:.5px}
+  .top .sub{opacity:.92;font-size:14.5px;margin-top:3px}
+  .top .badges{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:5px 13px;font-size:13px;font-weight:700}
+  .chip.g{background:rgba(56,161,105,.9);border:none}
+  .chip.o{background:rgba(224,123,32,.9);border:none}
+  .modebar{background:#fff;border-bottom:1px solid var(--line);padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:40;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .modebar .mbt{font-weight:800;font-size:16px}
+  .seg{display:inline-flex;background:#e8eef5;border-radius:30px;padding:4px;gap:4px}
+  .seg button{border:none;background:transparent;padding:9px 18px;border-radius:26px;font-size:15.5px;font-weight:800;cursor:pointer;color:#4a5b6f;font-family:inherit}
+  .seg button.on{background:var(--navy);color:#fff;box-shadow:0 3px 8px rgba(26,58,92,.35)}
+  .seg button.on.orange{background:var(--orange)}
+  .seg button.lockable{opacity:.55}
+  .mode-hint{font-size:13px;color:var(--muted)}
+  nav.nav{display:flex;gap:8px;padding:14px 22px 0;flex-wrap:wrap}
+  nav.nav button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 18px;font-size:16px;font-weight:800;color:#42556b;cursor:pointer;display:flex;gap:8px;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+  nav.nav button:hover{border-color:var(--blue);color:var(--blue)}
+  nav.nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  main{max-width:1280px;margin:0 auto;padding:18px 22px 60px}
+  section{display:none}
+  section.on{display:block}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;box-shadow:0 2px 10px rgba(26,58,92,.06);margin-bottom:18px}
+  .card h3{font-size:19px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h4{font-size:16.5px;margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+  .btn{border:none;border-radius:12px;padding:11px 18px;font-size:15.5px;font-weight:800;cursor:pointer;color:#fff;font-family:inherit;transition:.15s;background:var(--blue);box-shadow:0 3px 8px rgba(47,127,224,.3)}
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn.teal{background:var(--teal);box-shadow:0 3px 8px rgba(14,159,142,.3)}
+  .btn.green{background:var(--green)}
+  .btn.orange{background:var(--orange)}
+  .btn.red{background:var(--red)}
+  .btn.violet{background:var(--violet)}
+  .btn.ghost{background:#e8eef5;color:#2c3f58;box-shadow:none}
+  .btn.ghost:hover{background:#d8e2ee}
+  .btn.sm{padding:6px 12px;font-size:14px;border-radius:9px}
+  .btn:disabled,.btn.locked{cursor:not-allowed;opacity:.45;filter:grayscale(.4);transform:none!important}
+  .btn:disabled:hover{filter:none}
+  input,select,textarea{font-family:inherit;font-size:15.5px;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,127,224,.15)}
+  textarea{width:100%;resize:vertical;line-height:1.7}
+  label.lb{font-size:14px;font-weight:700;color:#52627a;display:block;margin:10px 0 5px}
+  .grid{display:grid;gap:16px}.g2{grid-template-columns:1.2fr .8fr}.g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:900px){.grid{grid-template-columns:1fr!important}}
+  .kpirow{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+  .kpi{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 18px;box-shadow:0 2px 8px rgba(26,58,92,.05)}
+  .kpi .kn{font-size:13.5px;color:var(--muted)}
+  .kpi .num{font-size:27px;font-weight:800;line-height:1.3}
+  .kpi.b .num{color:var(--blue)} .kpi.g .num{color:var(--green)} .kpi.o .num{color:var(--orange)} .kpi.v .num{color:var(--violet)} .kpi.t .num{color:var(--teal)}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:center}
+  th{background:#eef4fb;color:#1f3a5c;font-weight:800;font-size:14.5px}
+  td.l{text-align:left}
+  .pill{display:inline-block;border-radius:20px;padding:3px 11px;font-size:13px;font-weight:800;margin:2px}
+  .pill.s{background:#e6f4ea;color:#1f7a43}
+  .pill.p{background:#e7f0ff;color:#1d5dbd}
+  .pill.g{background:#e5f4ff;color:#0e7490}
+  .pill.r{background:#fdeaea;color:#c62a2f}
+  .pill.w{background:#fdf0e3;color:#b25a0e}
+  .pill.v{background:#f1e9fd;color:#6b3fc0}
+  .pill.dim{background:#eef2f7;color:#52627a}
+  .bar{height:14px;background:#e9eff6;border-radius:8px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#5aa2f0,#2f7fe0)}
+  .hist{display:flex;align-items:flex-end;gap:14px;height:170px;padding-top:6px}
+  .hcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+  .hcol .cnt{font-weight:800;font-size:15px;margin-bottom:3px}
+  .hcol .fill{width:62%;min-height:3px;border-radius:7px 7px 0 0}
+  .hcol .lb{font-size:13px;color:var(--muted);margin-top:6px;text-align:center}
+  .hcol .lb b{display:block;font-size:13.5px;color:var(--ink)}
+  .cE .fill{background:linear-gradient(#6ee7a0,#38a169)} .cP .fill{background:linear-gradient(#7cc4ff,#2f7fe0)}
+  .cC .fill{background:linear-gradient(#f6c177,#e07b20)} .cD .fill{background:linear-gradient(#f6a0a4,#e5484d)} .cEm .fill{background:linear-gradient(#b9c3d2,#7b8aa0)}
+  .essay{padding:8px 4px}
+  .essay-row{display:flex;gap:10px;align-items:flex-start;background:#fafcff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+  .essay-row .nm{font-weight:800;min-width:110px}
+  .essay-row .meta{color:var(--muted);font-size:13.5px}
+  .parabox{border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:6px 0;background:#fff;position:relative}
+  .parabox:hover{background:#f7fbff;border-color:var(--sky)}
+  .note-chip{background:#f1e9fd;border:1px solid #d9c9f5;color:#6b3fc0;border-radius:10px;padding:7px 10px;font-size:14px;margin:5px 0}
+  .note-chip .x{color:#b04a9b;font-weight:800;cursor:pointer;float:right}
+  .imgwrap{position:relative;display:inline-block;max-width:100%}
+  .imgwrap img{max-width:100%;border-radius:12px;display:block;border:1px solid var(--line)}
+  .imgwrap canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  .bubble{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--violet);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff}
+  .bubble .tip{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);width:230px;background:#2a2e3e;color:#fff;padding:9px 11px;border-radius:10px;font-size:14px;z-index:9;white-space:normal;box-shadow:var(--shadow)}
+  .bubble:hover .tip{display:block}
+  .sliderrow{display:flex;align-items:center;gap:12px;margin:9px 0}
+  .sliderrow .dn{flex:0 0 130px;font-weight:700;font-size:15px}
+  .sliderrow input{flex:1;accent-color:var(--blue)}
+  .sliderrow .dv{flex:0 0 120px;text-align:right;font-size:14.5px;color:var(--muted)}
+  .scorer{background:linear-gradient(160deg,#f2f7ff,#fff);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:sticky;top:80px}
+  .scorer .total{font-size:34px;font-weight:800;color:var(--navy);text-align:center}
+  .scorer .bandline{text-align:center;font-size:15px;margin:6px 0 10px}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#233043;color:#fff;padding:12px 24px;border-radius:30px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:999;font-size:15.5px;max-width:90vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .modal{position:fixed;inset:0;background:rgba(15,22,38,.55);z-index:200;overflow:auto;padding:16px;display:none}
+  .modal .box{max-width:560px;margin:8vh auto;background:#fff;border-radius:18px;padding:22px 24px;box-shadow:var(--shadow)}
+  .modal .box h3{margin-bottom:12px}
+  .close{float:right;border:none;background:#eef2f7;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+  .tag{border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:800}
+  .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .hint{font-size:13.5px;color:#6b7a90;margin-top:6px}
+  .statusok{color:var(--green);font-weight:800}.statuswarn{color:var(--orange);font-weight:800}.statusbad{color:var(--red);font-weight:800}
+  .stu-top{background:var(--grad);color:#fff;padding:18px 22px;text-align:center}
+  .stu-top h1{margin:0;font-size:24px}
+  .bigscore{font-size:42px;font-weight:800;text-align:center;color:var(--navy)}
+  .dimbar{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .dimbar .d{flex:0 0 130px;font-size:15px;font-weight:700}
+  .dimbar .bar{flex:1}
+  .dimbar .sc{flex:0 0 84px;text-align:right;font-size:14.5px;color:var(--muted)}
+  @media(max-width:760px){
+    body{font-size:16px}
+    .top{padding:14px 16px}
+    nav.nav{padding:12px 14px 0}
+    main{padding:14px 14px 60px}
+    .card{padding:16px}
+    table{font-size:13.5px}
+    th,td{padding:6px 6px}
+  }
+</style>
+</head>
+<body>
+<header class="top" id="topBar" style="display:none">
+  <div>
+    <div class="tt">📝 作文批阅工具</div>
+    <div class="sub">江苏医药职业学院 · 高职英语一 · PRETCO-A 应用能力写作评价 · 评分仅供参考，正式成绩以教师人工批阅为准</div>
+  </div>
+  <div class="badges" id="topBadges"></div>
+</header>
+
+<!-- 教师模式状态条 -->
+<div class="modebar" id="modeBar" style="display:none">
+  <span class="mbt">⚙️ 模式</span>
+  <span class="seg" id="modeSeg">
+    <button class="on" data-m="preview" onclick="setMode('preview')">🟡 课堂预览模式</button>
+    <button class="orange" data-m="formal" onclick="setMode('formal')">🟢 正式批阅模式</button>
+  </span>
+  <span class="mode-hint" id="modeHint">课堂预览：只浏览学情，禁止打分/发布（AI 5 档内部可见）</span>
+  <span style="flex:1"></span>
+  <button class="btn sm ghost" onclick="openEnvModal()">⚙️ 云端配置</button>
+  <button class="btn sm teal" onclick="pullCloud()">⬇️ 拉取学生提交</button>
+  <button class="btn sm" onclick="pushCloud()">⬆️ 推送批阅</button>
+  <button class="btn sm ghost" onclick="demoData()">🧪 演示数据</button>
+</div>
+
+<nav class="nav" id="navBar" style="display:none">
+  <button class="on" data-v="overview" onclick="switchV('overview')">📋 作业总览</button>
+  <button data-v="review" onclick="switchV('review')">📝 单篇评阅</button>
+  <button data-v="stats" onclick="switchV('stats')">📊 学情统计</button>
+  <button data-v="lib" onclick="switchV('lib')">🏆 范文 &amp; 典型错误库</button>
+</nav>
+
+<main id="appMain" style="display:none">
+  <!-- 作业总览 -->
+  <section id="v-overview" class="on">
+    <div class="kpirow" id="dashKpis"></div>
+    <div class="card">
+      <h3>🗂️ 作业列表 <span class="tag" style="background:#e5f4ff;color:#0e7490">新建作业后，点击「📱 学生提交码」让学生手机扫码提交</span>
+        <span style="flex:1"></span>
+        <button class="btn green" onclick="openAsgForm()">＋ 新建作业</button>
+      </h3>
+      <div id="asgList"></div>
+    </div>
+  </section>
+
+  <!-- 单篇评阅 -->
+  <section id="v-review">
+    <div class="card">
+      <h3 id="reviewTitle">📝 单篇评阅</h3>
+      <div id="revPick"></div>
+      <div id="revArea"></div>
+    </div>
+  </section>
+
+  <!-- 学情统计 -->
+  <section id="v-stats">
+    <div class="kpirow" id="statsKpis"></div>
+    <div class="card">
+      <h3>🎯 成绩档位分布（教师内部可见）</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+        <div>
+          <div style="font-weight:700;margin-bottom:4px">🤖 AI 预评估概览 <span class="tag" id="aiCount" style="background:#2f7fe0;color:#fff"></span></div>
+          <div class="hint" style="margin-bottom:6px">课堂预览模式也能直接看到 AI 档位分布。</div>
+          <div id="aiOverview" class="hist" style="display:none"></div>
+          <div class="hint" id="aiOverviewHint">尚未运行 AI 预评估。可在作业卡点「🤖 AI 预评估」批量评估，或在单篇评阅点「🤖 AI 预评估」。</div>
+        </div>
+        <div>
+          <div style="font-weight:700;margin-bottom:4px">📝 正式批阅分布 <span class="tag" id="bandCount" style="background:#38a169;color:#fff"></span></div>
+          <div class="hint" style="margin-bottom:6px">正式批阅完成（已批 / 已发布）后显示教师分档分布。</div>
+          <div id="bandHist" class="hist" style="display:none"></div>
+          <div class="hint" id="bandHint">正式批阅完成后这里显示教师分档分布。</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📈 各作业提交与批阅情况</h3>
+      <table id="statsTable"><thead><tr><th>作业</th><th>已提交</th><th>已批阅</th><th>已发布</th><th>平均分/15</th><th>批阅进度</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <!-- 范文/典型库 -->
+  <section id="v-lib">
+    <div class="card">
+      <h3>🏆 范文集 <span style="flex:1"></span><button class="btn sm ghost" onclick="renderLib()">刷新</button></h3>
+      <p class="hint">在单篇评阅中点击「加入范文库」沉淀；默认脱敏隐藏学生身份，可手动改为显示作者。</p>
+      <div id="modelList"></div>
+    </div>
+    <div class="card">
+      <h3>⚠️ 典型错误库（自动脱敏）</h3>
+      <p class="hint">只记录“错误片段 + 修改建议”，绝不出现学生姓名。</p>
+      <div id="wrongList"></div>
+    </div>
+  </section>
+</main>
+
+<!-- 学生端 -->
+<div id="stuWrap" style="display:none">
+  <div class="stu-top">
+    <h1>📝 英语作文提交</h1>
+    <div style="opacity:.92;font-size:14.5px">《高职英语一》· PRETCO-A 写作练习</div>
+  </div>
+  <main id="stuMain" style="max-width:760px"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+// 离线二维码库（与主工作台同款）
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+(function (factory) {
+  if (typeof define === 'function' && define.amd) {
+      define([], factory);
+  } else if (typeof exports === 'object') {
+      module.exports = factory();
+  }
+}(function () {
+    return qrcode;
+}));
+
+</script>
+
+<script>
+"use strict";
+/* ================= 基础 ================= */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const CLOUD_ENV='college-english-d9ffi87h93f30a34';
+const AI_URL='https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+const AI_MODEL=''; /* 默认留空：必须在本机「⚙️ 云端配置 → 模型 ID」填写你账号已开通的火山方舟模型（如 doubao-seed-2-1-lite-260915）或 ep- 接入点 ID，否则提示填写 */
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null==d?null:d;}catch(e){return d;}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v));},
+  remove(k){try{localStorage.removeItem(k);}catch(e){}}
+};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function pct(n){return Math.round(n*100);}
+function uid12(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+/* 维度权重：文本作文 vs 拍照作文 */
+const WEIGHTS={
+  text:[
+    {k:'task',n:'任务完成度',w:.35},
+    {k:'lang',n:'语言准确性',w:.30},
+    {k:'format',n:'格式规范',w:.15},
+    {k:'coh',n:'连贯·词汇句式',w:.20}
+  ],
+  photo:[
+    {k:'task',n:'任务完成度',w:.35},
+    {k:'lang',n:'语言准确性',w:.25},
+    {k:'format',n:'格式规范',w:.15},
+    {k:'coh',n:'连贯·词汇句式',w:.15},
+    {k:'hand',n:'书写卷面',w:.10}
+  ]
+};
+const BANDS=[
+  {k:'E', label:'Exemplary', zh:'圆满完成任务', range:'13–14'},
+  {k:'P', label:'Proficient', zh:'较好完成', range:'10–12'},
+  {k:'C', label:'Competent', zh:'基本完成', range:'7–9'},
+  {k:'D', label:'Developing', zh:'部分完成', range:'4–6'},
+  {k:'Em',label:'Emerging', zh:'几乎未完成', range:'0–3'}
+];
+const BANDCOL={E:'#38a169',P:'#2f7fe0',C:'#e07b20',D:'#e5484d',Em:'#8a97ab'};
+function bandFrom(total){
+  if(total>=13) return 'E';
+  if(total>=10) return 'P';
+  if(total>=7) return 'C';
+  if(total>=4) return 'D';
+  return 'Em';
+}
+function dimKeys(type){return WEIGHTS[type==='photo'?'photo':'text'];}
+function calcTotal(type,dims){
+  let t=0; dimKeys(type).forEach(d=>{t+=(Number(dims[d.k])||0)*d.w;});
+  return Math.round(t*10)/10;
+}
+function bandChip(k){const b=BANDS.find(x=>x.k===k);return `<span class="tag" style="background:${BANDCOL[k]};color:#fff">${b?b.label+' · '+b.range:''}</span>`;}
+
+/* ================= 云 ================= */
+let _cb=null,_cbIn=false;
+function cbInit(){const env=LS.get('cloudEnv',CLOUD_ENV);if(_cb)return _cb;if(typeof cloudbase==='undefined'){toast('CloudBase SDK 未加载（需联网）');return null;}
+  try{_cb=cloudbase.init({env});}catch(e){toast('云端初始化失败');return null;}return _cb;}
+async function cbReady(){
+  const a=cbInit(); if(!a)return null;
+  try{
+    if(!_cbIn){
+      const au=typeof a.auth==='function'?a.auth():a.auth;
+      await Promise.race([
+        au.signInAnonymously(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('匿名登录超时：请检查网络或确认当前域名已在 CloudBase「WEB 安全域名」白名单。')),8000))
+      ]);
+      _cbIn=true;
+    }
+  }catch(e){toast('云端登录失败：'+e.message);return null;}
+  return a;
+}
+async function testCloud(){
+  $('#envMsg').textContent='测试中…';
+  const r=await getCloudAssignments(true);
+  $('#envMsg').innerHTML=r.error?'⚠️ '+esc(r.error):'✅ 连接正常，云端可读写';
+}
+
+/* 作业云端：文档 _id = asg_<aid>，存 meta（教师建） */
+async function cloudAssignUpsert(a){
+  const app=await cbReady(); if(!app)return false;
+  const col=app.database().collection('assignments'); const id='asg_'+a.aid;
+  try{const ex=await col.doc(id).get(); if(ex.data&&ex.data.length){await col.doc(id).update(a);}else{await col.doc(id).add(Object.assign({_id:id},a));}return true;}catch(e){console.warn(e);return false;}
+}
+async function getCloudAssignments(silent){
+  const app=await cbReady(); if(!app)return {list:[],error:'未登录'};
+  try{const r=await app.database().collection('assignments').limit(200).get();return {list:r.data||[]};}
+  catch(e){return {list:[],error:e.message};}
+}
+/* 作文云端：每人一条 doc（学生本人创建；权限设为所有用户可读写以便教师批阅） */
+async function essayAdd(d){const app=await cbReady();if(!app)return{error:'未登录'};
+  try{const r=await app.database().collection('essays').add(Object.assign({ts:Date.now(),up:Date.now()},d));return{ok:true,_id:r.id};}
+  catch(e){return{error:e.message};}}
+/* 批阅存在独立 essayGrades 集合 _id='g_'+eid，教师拥有，READONLY 即可写自己 */
+async function gradeUpsert(g){
+  const app=await cbReady(); if(!app)return{error:'未登录'};
+  const col=app.database().collection('essayGrades'); const id='g_'+g.eid;
+  try{const ex=await col.doc(id).get(); const payload=Object.assign({_id:id,up:Date.now()},g);
+    if(ex.data&&ex.data.length) await col.doc(id).update(payload);
+    else await col.doc(id).add(payload);
+    return{ok:true};
+  }catch(e){return{error:e.message};}
+}
+async function cloudEssays(){const app=await cbReady();if(!app)return[];
+  try{const r=await app.database().collection('essays').limit(1000).get();return r.data||[];}catch(e){return[];}}
+async function cloudGrades(){const app=await cbReady();if(!app)return[];
+  try{const r=await app.database().collection('essayGrades').limit(1000).get();return r.data||[];}catch(e){return[];}}
+/* 状态由 grade 推导：returnedMsg→returned；status==='published'→published；存在 dims→graded；否则 submitted */
+function deriveStatus(e){
+  const g=e.grade;
+  if(g && g.returnedMsg) return 'returned';
+  if(g && g.status==='published') return 'published';
+  if(g && g.dims) return 'graded';
+  return 'submitted';
+}
+/* 云端拉取：合并 students + grades */
+async function pullCloud(){
+  toast('正在从云端拉取…');
+  const es=await cloudEssays(); const gs=await cloudGrades();
+  if(!es.length&&!gs.length){toast('云端暂无数据（学生尚未提交，或集合未建）');}
+  const gMap={}; gs.forEach(g=>{ if(g.eid) gMap[g.eid]=g; });
+  let add=0;
+  es.forEach(c=>{
+    const loc=essById(c._id); const ng=gMap[c._id];
+    if(loc){
+      if((c.up||0)>(loc.up||0)) Object.assign(loc,c);
+      if(ng && (!loc.grade || (ng.up||0)>(loc.grade.up||0))) loc.grade=ng;
+    } else { const obj=Object.assign({_id:c._id},c); obj.grade=ng||null; G.ess.push(obj); add++; }
+  });
+  saveEss();
+  await mergeAssignFromCloud();
+  renderDash(); renderRevList(); renderStats();
+  toast(add?`✅ 已拉取 ${add} 条学生提交`:'当前为最新');
+}
+async function mergeAssignFromCloud(){
+  const r=await getCloudAssignments(true); if(r.error)return;
+  r.list.forEach(c=>{ if(c&&c.aid&&!G.asg.find(a=>a.aid===c.aid)){ G.asg.push({aid:c.aid,title:c.title||'',task:c.task||'',type:c.type||'any',open:c.open!==false,ts:c.ts||0}); } });
+  saveAsg(); renderDash();
+}
+/* 推送：作业 + 本地所有 grade 改动（教师拥有） */
+async function pushCloud(){
+  toast('正在推送…');let ok=0,fail=0;
+  for(const a of G.asg){ if(await cloudAssignUpsert(a)) ok++; else fail++; }
+  const dirty=G.ess.filter(e=>e._id && e.grade && e.grade.dirty!==false);
+  for(const e of dirty){
+    const g=Object.assign({},e.grade,{eid:e._id, aid:e.aid});
+    const r=await gradeUpsert(g); if(r.ok){e.grade.dirty=false; ok++;} else fail++;
+  }
+  saveEss();
+  toast(`✅ 推送完成（作业/批阅 ${ok}，失败 ${fail}）`);
+}
+function pickGradeFields(g){
+  return {status:g.status||'draft', dims:g.dims||null, band:g.band||null, bandM:g.bandM||null, total:g.total!=null?g.total:null,
+    rev:g.rev||null, inline:g.inline||[], prep:g.prep||'', fb:g.fb||'', returnedMsg:g.returnedMsg||'',
+    pen:g.pen||null, bubbles:g.bubbles||[], pubAt:g.pubAt||null};
+}
+
+/* ================= 状态 ================= */
+const G={
+  mode: LS.get('ea_mode','preview'),
+  asg: LS.get('ea_asgs',[]),
+  ess: LS.get('ea_ess',[]),
+  models: LS.get('ea_models',[]),
+  wrongs: LS.get('ea_wrong',[]),
+  cur: null,      // 当前打开的作文（本地对象）
+  reviewAid: null,
+  v:'overview',
+  stu:{name:LS.get('ea_stuname',''),sid:LS.get('ea_stusid','')},
+  stuAid:null
+};
+function saveAsg(){LS.set('ea_asgs',G.asg);}
+function saveEss(){LS.set('ea_ess',G.ess);}
+function saveAll(){saveAsg();saveEss();LS.set('ea_models',G.models);LS.set('ea_wrong',G.wrongs);}
+function essById(_id){return G.ess.find(e=>e._id===_id);}
+function essaysOf(aid){return G.ess.filter(e=>e.aid===aid).sort((a,b)=>(a.ts||0)-(b.ts||0));}
+function asgOf(aid){return G.asg.find(a=>a.aid===aid);}
+
+/* ================= 教师模式开关 ================= */
+function setMode(m){
+  if(m===G.mode)return;
+  if(m==='formal' && G.mode==='preview'){
+    if(!confirm('切换到「正式批阅模式」将解锁：打分、批注、发布、退回重写。\n确认已在课堂外？'))return;
+  }
+  if(m==='preview' && G.mode==='formal'){
+    if(!confirm('切回「课堂预览模式」会临时锁住打分/发布按钮（已保存的批阅不受影响）。继续？'))return;
+  }
+  G.mode=m; LS.set('ea_mode',m);
+  const seg=$('#modeSeg'); seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('#modeHint').textContent = m==='preview'
+    ? '课堂预览：只浏览学情 / 内部5档，禁止打分、发布与退回（请课后再切正式批阅）'
+    : '正式批阅：已解锁打分、批注、发布、退回重写（正式成绩以人工评阅为准）';
+  refreshLockedUI();
+  toast(m==='formal'?'已切换：正式批阅模式（解锁）':'已切换：课堂预览模式（锁定发布/打分）');
+}
+function isFormal(){return G.mode==='formal';}
+function lockedCls(){return '';}
+function lockNotice(msg){
+  showModal(`<h3 style="margin-top:0">🔒 课堂预览模式</h3>
+    <div style="background:#fff8e1;border:1px solid #f5d67b;border-radius:12px;padding:14px 16px;margin:12px 0;font-size:15px;line-height:1.7">${msg}</div>
+    <div style="text-align:center;margin-top:6px"><button class="btn" style="min-width:140px" onclick="closeModal()">知道了</button></div>`,false);
+}
+function refreshLockedUI(){
+  // 预览锁改为「点击再提醒」：按钮永远可点、永远彩色，不再禁用置灰
+  $$('.lockable-btn').forEach(b=>{ b.disabled=false; });
+}
+
+/* ================= 顶部 & 导航 ================= */
+const IS_STU=(new URLSearchParams(location.search)).get('mode')==='student';
+function initTeacherUI(){
+  if(IS_STU)return;
+  $('#topBar').style.display=''; $('#modeBar').style.display=''; $('#navBar').style.display=''; $('#appMain').style.display='';
+  setMode(G.mode);
+  $('#envInput').value=LS.get('cloudEnv',CLOUD_ENV);
+  renderDash(); renderRevList(); renderStats(); renderLib();
+  mergeAssignFromCloud(); pullCloud();
+}
+function switchV(v){
+  G.v=v;
+  $$('#navBar button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $$('#appMain section').forEach(s=>s.classList.remove('on'));
+  $('#v-'+v).classList.add('on');
+  if(v==='review')renderRevList();
+  if(v==='stats')renderStats();
+  if(v==='lib')renderLib();
+}
+
+/* ================= 作业 CRUD ================= */
+function openAsgForm(aid){
+  const a=aid?asgOf(aid):null;
+  showModal(`
+    <h3>${a?'✏️ 编辑作业':'＋ 新建作业'}</h3>
+    <label class="lb">作业标题</label><input id="mf_title" value="${esc(a?a.title:'')}" style="width:100%" placeholder="如：Unit 4 应用文 — 给朋友写一封建议信">
+    <label class="lb">题目与要求（可含 PRETCO-A 提示）</label>
+    <textarea id="mf_task" rows="4" placeholder="Directions: …&#10;注意：格式、时态、要点覆盖…">${esc(a?a.task:'')}</textarea>
+    <label class="lb">提交方式</label>
+    <select id="mf_type" style="width:100%">
+      <option value="any" ${a&&a.type==='any'?'selected':''}>文本 与 拍照 均可</option>
+      <option value="text" ${a&&a.type==='text'?'selected':''}>仅电子文本</option>
+      <option value="photo" ${a&&a.type==='photo'?'selected':''}>仅拍照上传</option>
+    </select>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn green" style="flex:1" onclick="submitAsgForm('${a?a.aid:''}')">保存作业</button>
+      <button class="btn ghost" onclick="closeModal()">取消</button>
+    </div>`, false);
+}
+function submitAsgForm(aid){
+  const title=$('#mf_title').value.trim(), task=$('#mf_task').value.trim(), type=$('#mf_type').value;
+  if(!title){toast('请填写作业标题');return;}
+  if(aid){
+    const a=asgOf(aid); Object.assign(a,{title,task,type}); saveAsg();
+    toast('作业已更新');
+  } else {
+    G.asg.unshift({aid:uid12(),title,task,type,open:true,ts:Date.now()}); saveAsg();
+    toast('作业已创建');
+  }
+  cloudAssignUpsert(asgOf(aid||G.asg[0].aid));
+  closeModal(); renderDash(); renderStats();
+}
+function delAsg(aid){
+  if(!confirm('删除作业？本地该作业的作文数据也会清空（云端学生提交保留）。'))return;
+  G.asg=G.asg.filter(a=>a.aid!==aid); G.ess=G.ess.filter(e=>e.aid!==aid); saveAll(); renderDash(); renderStats(); renderRevList(); toast('已删除');
+}
+/* 学生提交码：二维码必须指向可访问的线上/局域网地址，禁止 file:// 磁盘路径 */
+const ESSAY_BASE_DEFAULT='https://liu9098.github.io/College-English-Workbench/essay.html';
+function normEssayBase(v){
+  let b=(v||'').trim().split('?')[0].replace(/\/+$/,'');
+  if(!b) return '';
+  if(!/^https?:\/\//i.test(b)) return '';
+  return b;
+}
+function essayStuBase(){
+  const saved=normEssayBase(LS.get('essayBase',''));
+  if(saved) return saved;
+  if(location.protocol==='file:') return ESSAY_BASE_DEFAULT;
+  return location.origin+location.pathname;
+}
+function genQRFor(aid){
+  const a=asgOf(aid); if(!a)return;
+  const box=$('#qr_'+aid);
+  if(!box)return;
+  const b=essayStuBase();
+  const head=`<div class="hint" style="margin-bottom:6px">学生手机扫码进入本作业提交页（需联网访问 CloudBase）</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="hint" style="white-space:nowrap">学生访问地址</span>
+      <input id="essayBase_${aid}" value="${esc(b||'')}" placeholder="${ESSAY_BASE_DEFAULT}" style="flex:1;min-width:240px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px">
+      <button class="btn sm" onclick="applyEssayBase('${aid}')">应用</button>
+      <button class="btn sm ghost" onclick="resetEssayBase('${aid}')">自动识别</button>
+    </div>`;
+  if(!b){
+    box.innerHTML=head+`<div class="hint" style="margin-top:8px;color:#c53030;line-height:1.7">当前为本地文件（file://）打开，无法生成可扫码的线上地址。请在上方填入线上地址（如 ${ESSAY_BASE_DEFAULT}），再点「应用」。</div>`;
+    return;
+  }
+  const url=b+'?mode=student&aid='+aid;
+  const openUrl=url.replace(/'/g,"\\'");
+  try{
+    const q=qrcode(0,'M'); q.addData(url); q.make();
+    box.innerHTML=head+`
+      <div style="display:inline-block;margin-top:10px;padding:6px 12px;border-radius:999px;color:#fff;font-size:12px;background:#0e7490">📝 ${esc(a.title||'作文')}</div>
+      <div style="text-align:center;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--line);display:block;margin-top:10px">${q.createSvgTag({cellSize:5,margin:6})}</div>
+      <div class="hint" style="word-break:break-all;margin-top:8px">${esc(url)}</div>
+      <div style="margin-top:6px"><button class="btn sm ghost" onclick="copyTxt('${openUrl}')">复制链接</button></div>`;
+  }catch(e){ box.innerHTML=head+'<div class="hint">二维码生成失败：'+esc(e.message)+'</div>'; }
+}
+function applyEssayBase(aid){
+  const el=document.getElementById('essayBase_'+aid);
+  const v=normEssayBase(el?el.value:'');
+  if(!v){ toast('请填写以 http:// 或 https:// 开头的完整地址'); return; }
+  LS.set('essayBase', v); genQRFor(aid);
+}
+function resetEssayBase(aid){
+  LS.remove('essayBase'); genQRFor(aid);
+}
+function copyTxt(t){ if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('链接已复制')).catch(()=>toast('复制失败'));} }
+/* 总览渲染 */
+function renderDash(){
+  const el=$('#dashKpis'); if(!el)return;
+  const sub=G.ess.filter(e=>{const s=deriveStatus(e);return s==='submitted'||s==='graded'||s==='published'||s==='returned';});
+  const graded=G.ess.filter(e=>{const s=deriveStatus(e);return s==='graded'||s==='published';});
+  const avg=graded.length? graded.reduce((s,e)=>s+(Number(e.grade&&e.grade.total)||0),0)/graded.length : 0;
+  el.innerHTML=`<div class="kpi b"><div class="kn">作业数</div><div class="num">${G.asg.length}</div></div>
+    <div class="kpi t"><div class="kn">收到作文</div><div class="num">${sub.length}</div></div>
+    <div class="kpi g"><div class="kn">已批阅</div><div class="num">${graded.length}</div></div>
+    <div class="kpi o"><div class="kn">平均分 / 15</div><div class="num">${avg?avg.toFixed(1):'—'}</div></div>
+    <div class="kpi v"><div class="kn">当前模式</div><div class="num" style="font-size:20px;line-height:1.9">${G.mode==='formal'?'🟢 正式批阅':'🟡 课堂预览'}</div></div>`;
+  const L=$('#asgList');
+  if(!G.asg.length){L.innerHTML='<div class="hint">还没有作业。点击「＋ 新建作业」，然后在作业卡里点「📱 学生提交码」让手机扫码。</div><div style="margin-top:10px"><button class="btn ghost" onclick="demoData()">🧪 先用演示数据试试（本机生成 2 份）</button></div>';return;}
+  L.innerHTML=G.asg.map(a=>{
+    const es=essaysOf(a.aid);
+    const st=es.filter(e=>deriveStatus(e)==='submitted').length, gd=es.filter(e=>{const s=deriveStatus(e);return s==='graded'||s==='published';}).length, pub=es.filter(e=>deriveStatus(e)==='published').length;
+    const total=es.length;
+    return `<div class="card" style="margin-bottom:14px">
+      <h3>${esc(a.title)}
+        <span class="tag" style="background:${a.open?'#e6f4ea':'#fdeaea'};color:${a.open?'#1f7a43':'#c62a2f'}">${a.open?'收集中':'已截止'}</span>
+        <span class="tag" style="background:#eef2f7;color:#52627a">${a.type==='text'?'仅文本':a.type==='photo'?'仅拍照':'文本/拍照'}</span>
+        <span style="flex:1"></span>
+        <button class="btn sm ghost" onclick="genQRFor('${a.aid}')">📱 学生提交码</button>
+        <button class="btn sm ghost" onclick="openAsgForm('${a.aid}')">✏️ 编辑</button>
+        <button class="btn sm red" onclick="delAsg('${a.aid}')">🗑</button>
+      </h3>
+      <div class="hint" style="white-space:pre-wrap">${esc(a.task||'')}</div>
+      <div id="qr_${a.aid}" class="hint" style="margin-top:6px"></div>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px"><div class="bar"><i style="width:${total?pct(gd/total):0}%;background:linear-gradient(90deg,#5aa2f0,#38a169)"></i></div>
+        <div class="hint">批阅进度：${gd}/${total}（${total?pct(gd/total):0}%）</div></div>
+        <div style="font-size:15px">提交 <b>${total}</b> · 已批 <b style="color:var(--green)">${gd}</b> · 已发布 <b style="color:var(--blue)">${pub}</b> · 待批 <b style="color:var(--orange)">${st}</b></div>
+        <button class="btn sm violet" onclick="aiGradeAll('${a.aid}')">🤖 AI 预评估</button>
+        <button class="btn sm teal" onclick="openReviewForAsg('${a.aid}')">📝 去批阅</button>
+      </div></div>`;
+  }).join('');
+}
+function openReviewForAsg(aid){G.reviewAid=aid;switchV('review');}
+
+/* ================= 单篇评阅列表 ================= */
+function renderRevList(){
+  $('#reviewTitle').textContent='📝 单篇评阅';
+  const box=$('#revPick'); if(!box)return;
+  const opts='<option value="">— 选择作业 —</option>'+G.asg.map(a=>`<option value="${a.aid}" ${G.reviewAid===a.aid?'selected':''}>${esc(a.title)}</option>`).join('');
+  box.innerHTML=`<div class="flex" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <select id="revAsg" style="min-width:220px;flex:1" onchange="revPickAsg(this.value)">${opts}</select>
+    <select id="revSort" style="min-width:150px" onchange="revPickAsg(G.reviewAid)">
+      <option value="time">按提交时间</option>
+      <option value="ai">按 AI 档位（示范在上）</option>
+    </select>
+    <span class="hint" id="revCount"></span></div><div id="revList" style="margin-top:8px"></div>`;
+  revPickAsg(G.reviewAid||'');
+}
+function revPickAsg(aid){
+  G.reviewAid=aid;
+  const L=$('#revList'); const box=document.getElementById('revAsg'); if(box)box.value=aid||'';
+  if(!L)return;
+  if(!aid){L.innerHTML='<div class="hint">请先选择作业。</div>';$('#revCount').textContent='';return;}
+  let es=essaysOf(aid);
+  const sort=document.getElementById('revSort');
+  if(sort && sort.value==='ai'){
+    const order={E:0,P:1,C:2,D:3,Em:4};
+    const bandOf=e=>(e.ai&&e.ai.band)||(e.grade&&e.grade.band)||null;
+    es=es.slice().sort((a,b)=>(order[bandOf(a)]??9)-(order[bandOf(b)]??9));
+  }
+  $('#revCount').textContent=`共 ${es.length} 篇`;
+  if(!es.length){L.innerHTML='<div class="hint">本作业还没有收到提交——点击顶部「⬇️ 拉取学生提交」，或在作业卡里展示提交码让学生扫码。</div>';return;}
+  L.innerHTML=es.map(e=>{
+    const st=deriveStatus(e);
+    const s={submitted:['待批','w'],graded:['已批未发布','v'],published:['已发布','s'],returned:['退回重写','r']}[st]||['—','dim'];
+    const g=e.grade||{}; const ai=e.ai||{};
+    const band=g.band||ai.band||null;
+    const total=g.total!=null?g.total:(ai.total!=null?ai.total:null);
+    return `<div class="essay-row">
+      <div class="nm">${esc(e.name||'未署名')}<div class="meta">${esc(e.sid||'')||'—'}</div></div>
+      <div style="flex:1">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="pill ${e.type==='photo'?'o':'p'}">${e.type==='photo'?'📷 拍照':'⌨️ 文本'}</span>
+          <span class="pill dim">${e.text?e.text.split(/\s+/).length+' 词':'（图片）'}</span>
+          ${total!=null?`<span class="pill ${Number(total)>=10?'s':'w'}">${total}/15</span>`:''}
+          ${band?`<span class="tag" style="background:${BANDCOL[band]||'#8a97ab'};color:#fff">${band}${ai.band&&!g.band?' ·AI':''}</span>`:''}
+          <span class="pill ${s[1]}">${s[0]}</span>
+        </div>
+        <div class="meta" style="margin-top:4px">提交于 ${new Date(e.ts||Date.now()).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <button class="btn sm teal" onclick="openEssay('${e._id}')">打开评阅</button>
+    </div>`;
+  }).join('');
+}
+
+/* ================= 单篇评阅（教师） ================= */
+function openEssay(_id){
+  const e=essById(_id); if(!e)return;
+  G.cur=e;
+  switchV('review');
+  $('#reviewTitle').innerHTML=`📝 单篇评阅：${esc(e.name||'未署名')}（${esc(e.sid||'—')}） ${e.type==='photo'?'📷':'⌨️'}
+    <span class="tag" style="background:#eef2f7;color:#52627a">${esc((asgOf(e.aid)||{}).title||'')}</span>
+    <span style="flex:1"></span>
+    <button class="btn sm ghost" onclick="renderRevList()">← 返回列表</button>`;
+  const box=$('#revArea');
+  const dims=dimKeys(e.type);
+  const vals=(e.grade&&e.grade.dims)||{};
+  const total=(e.grade&&e.grade.total!=null)?e.grade.total:calcTotal(e.type,vals||{});
+  const g=e.grade||{};
+  const curStatus=deriveStatus(e);
+  box.innerHTML=`
+    <div class="grid g2">
+      <div>
+        <div class="card" style="margin-bottom:12px">
+          <h4>✍️ 学生作文${e.type==='text'?'（可修订原文）':''}</h4>
+          ${e.type==='photo'
+            ? `<div style="text-align:center">
+                <div class="imgwrap" id="imgW">
+                  <img id="imgSrc" src="${e.img||''}" alt="作文图片">
+                  <canvas id="penCv"></canvas>
+                </div>
+                <div class="flex" style="justify-content:center;margin-top:8px">
+                  <label>🖍 画笔色 <input type="color" id="penCol" value="#e5484d" style="width:44px;height:34px;padding:2px"></label>
+                  <label>粗细 <input type="range" id="penSz" min="1" max="14" value="4" style="width:100px"></label>
+                  <button class="btn sm violet" onclick="addBubble()">🔖 加气泡批注</button>
+                  <button class="btn sm ghost" onclick="clearPen()">清除画笔</button>
+                </div>
+                <div id="bubList" style="text-align:left"></div>
+              </div>`
+            : `<div id="txtPars"></div>
+               <label class="lb" style="margin-top:14px">教师修订稿（可选，只保留给教师参考 / 也可退回时附给学生）</label>
+               <textarea id="revText" rows="6" placeholder="在此改写修订…（不强制）">${esc(g.rev||e.text||'')}</textarea>`
+          }
+        </div>
+        <div class="card">
+          <h4>🗒 批注与评语</h4>
+          ${e.type==='text'?'<div class="hint">在左侧段落上用鼠标选中句子后点「批注此段」；或直接在此记录。</div>':''}
+          <div id="notesHere" style="margin-bottom:8px"></div>
+          <label class="lb">📌 行内 / 段批注（发布时对学生可见）</label>
+          <textarea id="inlineTxt" rows="2" placeholder="如：第2段 improve 应改为 improving，注意介词搭配…"></textarea>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn sm violet" onclick="addNote()">➕ 加为批注条</button>
+            <button class="btn sm orange ${lockedCls()}" data-need="formal" onclick="quickWrong()">⚠️ 收进典型错误库</button>
+          </div>
+          <label class="lb">🔒 备课批注（仅自己可见，绝不下发）</label>
+          <textarea id="prepTxt" rows="2" placeholder="课堂讲解要点、下次要提醒的点…（不下发）">${esc(g.prep||'')}</textarea>
+          <label class="lb">💬 正式评语（发布时对学生可见）</label>
+          <textarea id="fbTxt" rows="3" placeholder="总评：优点 + 不足 + 修改建议">${esc(g.fb||'')}</textarea>
+        </div>
+      </div>
+      <div>
+        <div class="scorer">
+          <div style="text-align:center;font-weight:800;font-size:15px">分项打分（0–15，按权重自动合成）</div>
+          <div id="dimSliders"></div>
+          <div style="border-top:1px dashed var(--line);margin:10px 0"></div>
+          <div class="total" id="totalBig">${Number(total).toFixed(1)}</div>
+          <div class="bandline" id="bandLine">${bandChip(g.band||bandFrom(total))} <span style="color:var(--muted)">自动档位</span></div>
+          <label class="lb">🎯 教师内部档位（可改，仅教师可见）</label>
+          <select id="bandSel" style="width:100%">${BANDS.map(b=>`<option value="${b.k}" ${(g.bandM||g.band||bandFrom(total))===b.k?'selected':''}>${b.k} · ${b.label}（${b.range}分）— ${b.zh}</option>`).join('')}</select>
+          <div class="locknote hint" style="margin:8px 0;font-weight:800;color:var(--orange)">${isFormal()?'':'🟡 课堂预览模式：打分/发布/退回需先切「正式批阅」（点击按钮会提示）'}</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+            <button id="aiBtn" class="btn sm violet" onclick="aiGradeOne()">🤖 AI 预评估</button>
+            <span class="hint" style="font-size:13px">AI 先打分供参考，教师确认后手动「保存批阅」（拍照作文不支持）</span>
+          </div>
+          <div id="aiBox"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn sm ghost lockable-btn" data-need="formal" onclick="saveGrade(true)">💾 保存批阅</button>
+            <button class="btn sm green lockable-btn" data-need="formal" onclick="publishEssay()">📤 发布给学生</button>
+            <button class="btn sm red lockable-btn" data-need="formal" onclick="returnEssay()">↩️ 退回重写</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn sm violet" onclick="addModel()">🏆 收进范文库</button>
+            <button class="btn sm orange" onclick="togglePub()">${curStatus==='published'?'🔁 改为已发布':'切换状态'}</button>
+          </div>
+          <div class="hint" style="margin-top:8px">权重：${dimKeys(e.type).map(d=>`${d.n} ${Math.round(d.w*100)}%`).join(' · ')}</div>
+        </div>
+      </div>
+    </div>`;
+  renderDims(e.type, vals||{});
+  $('#bandSel').value=(g.bandM||g.band||bandFrom(total));
+  if(e.type==='text'){renderPars(e);}
+  else { loadPen(e); renderBubbles(e); }
+  renderNotes();
+  refreshLockedUI();
+}
+function renderPars(e){
+  const box=$('#txtPars'); if(!box)return;
+  const body=e.text||'';
+  const paras=body.split(/\n+/).filter(Boolean);
+  box.innerHTML=paras.map((p,i)=>`<div class="parabox" id="pb_${i}" style="user-select:text">
+    <div style="white-space:pre-wrap">${i+1}. ${esc(p)}</div>
+    <div style="margin-top:4px"><button class="btn sm ghost" onclick="annotatePara(${i})">🔖 选中段落文字批注</button></div>
+  </div>`).join('');
+}
+function annotatePara(i){
+  const sel=window.getSelection?window.getSelection().toString().trim():'';
+  const quote=sel||($('#pb_'+i).innerText.replace(/^\d+\.\s*/,'').trim());
+  showModal(`<h3>📌 段落批注 · 第 ${i+1} 段</h3>
+    <label class="lb">引用原文</label><textarea id="an_quote" rows="2">${esc(quote.slice(0,300))}</textarea>
+    <label class="lb">批注内容</label><textarea id="an_txt" rows="2" placeholder="指出问题 / 修改建议"></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn violet" style="flex:1" onclick="saveAnnotate(${i})">保存批注</button>
+    <button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function saveAnnotate(i){
+  const quote=$('#an_quote').value.trim(), txt=$('#an_txt').value.trim();
+  if(!txt){toast('请填写批注');return;}
+  G.cur.grade=Object.assign({},G.cur.grade||{});
+  G.cur.grade.inline=G.cur.grade.inline||[];
+  G.cur.grade.inline.push({p:i, quote, txt, by:'T'});
+  G.cur.grade.dirty=true;
+  closeModal(); renderNotes(); toast('已加批注');
+}
+function addNote(){
+  const t=$('#inlineTxt')?$('#inlineTxt').value.trim():'';
+  if(!t){toast('请先输入批注内容');return;}
+  G.cur.grade=Object.assign({},G.cur.grade||{});
+  G.cur.grade.inline=G.cur.grade.inline||[];
+  G.cur.grade.inline.push({p:null,quote:'',txt:t,by:'T'});
+  G.cur.grade.dirty=true;
+  $('#inlineTxt').value='';
+  renderNotes(); toast('批注已加入');
+}
+function renderNotes(){
+  const box=$('#notesHere'); if(!box)return;
+  const arr=(G.cur.grade&&G.cur.grade.inline)||[];
+  box.innerHTML=arr.length?arr.map((n,i)=>`<div class="note-chip">${n.p!=null?`<b>第${n.p+1}段</b> `:''}${esc(n.txt)}${n.quote?` <span class="hint">（引用：${esc(n.quote.slice(0,60))}…）</span>`:''}<span class="x" onclick="delNote(${i})">×</span></div>`).join('')
+    :'<div class="hint">暂无批注</div>';
+}
+function delNote(i){G.cur.grade.inline.splice(i,1);G.cur.grade.dirty=true;saveEss();renderNotes();}
+
+/* ---- 拍照作文：画笔 + 气泡 ---- */
+function loadPen(e){
+  const cv=document.getElementById('penCv'); if(!cv)return;
+  const img=document.getElementById('imgSrc'); if(!img)return;
+  function fit(){
+    cv.width=img.clientWidth||img.naturalWidth; cv.height=img.clientHeight||img.naturalHeight;
+    const ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
+    if(e.grade&&e.grade.pen){ const im=new Image(); im.onload=()=>ctx.drawImage(im,0,0); im.src=e.grade.pen; }
+  }
+  img.onload=fit; fit();
+  let draw=false,last=null;
+  cv.onpointerdown=ev=>{draw=true;last=pos(ev);};
+  cv.onpointermove=ev=>{if(!draw)return;const p=pos(ev);const ctx=cv.getContext('2d');
+    ctx.strokeStyle=$('#penCol').value; ctx.lineWidth=Number($('#penSz').value); ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;};
+  cv.onpointerup=()=>{draw=false; if(G.cur){G.cur.grade=G.cur.grade||{};G.cur.grade.pen=cv.toDataURL('image/png');G.cur.grade.dirty=true;saveEss();} };
+  function pos(ev){const r=cv.getBoundingClientRect();return{x:(ev.clientX-r.left)*(cv.width/r.width),y:(ev.clientY-r.top)*(cv.height/r.height)};}
+}
+function clearPen(){const cv=$('#penCv');if(!cv)return;cv.getContext('2d').clearRect(0,0,cv.width,cv.height);if(G.cur){G.cur.grade=G.cur.grade||{};G.cur.grade.pen=null;G.cur.grade.dirty=true;saveEss();} toast('画笔已清除');}
+function addBubble(){
+  showModal(`<h3>🔖 添加气泡批注</h3><p class="hint">点按图片位置放置编号（也可直接输入数字坐标）。建议：先在图上单击弹出位置的实现较复杂，这里用「段落/要点」标注。</p>
+    <label class="lb">批注内容</label><textarea id="bb_txt" rows="3" placeholder="此处的问题或表扬…"></textarea>
+    <label class="lb">大致位置（左% / 上%，可留空自动按序排列）</label>
+    <div class="flex" style="display:flex;gap:8px"><input id="bb_x" style="width:90px" placeholder="X%"><input id="bb_y" style="width:90px" placeholder="Y%"></div>
+    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn violet" style="flex:1" onclick="saveBubble()">保存气泡</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function saveBubble(){
+  const txt=$('#bb_txt').value.trim(); if(!txt){toast('请填写内容');return;}
+  G.cur.grade=G.cur.grade||{};
+  G.cur.grade.bubbles=G.cur.grade.bubbles||[];
+  G.cur.grade.bubbles.push({x:$('#bb_x').value||(12+(G.cur.grade.bubbles.length*8)%70), y:$('#bb_y').value||(15+(G.cur.grade.bubbles.length*10)%60), txt});
+  G.cur.grade.dirty=true; saveEss();
+  closeModal(); renderBubbles(G.cur); toast('气泡已加');
+}
+function renderBubbles(e){
+  const w=$('#imgW'); const box=$('#bubList');
+  if(!w)return;
+  w.querySelectorAll('.bubble').forEach(b=>b.remove());
+  const arr=(e.grade&&e.grade.bubbles)||[];
+  arr.forEach((b,i)=>{
+    const d=document.createElement('div'); d.className='bubble';
+    d.style.left=b.x+'%'; d.style.top=b.y+'%';
+    d.textContent=i+1;
+    const tip=document.createElement('div'); tip.className='tip'; tip.innerHTML=esc(b.txt);
+    d.appendChild(tip);
+    d.title='点击删除';
+    d.onclick=()=>{ if(confirm('删除这条气泡批注？')){e.grade.bubbles.splice(i,1);e.grade.dirty=true;saveEss();renderBubbles(e);} };
+    w.appendChild(d);
+  });
+  if(box)box.innerHTML=arr.map((b,i)=>`<div class="note-chip">🔖 ${i+1}. ${esc(b.txt)} <span class="x" onclick="rmBub(${i})">×</span></div>`).join('');
+}
+function rmBub(i){G.cur.grade.bubbles.splice(i,1);G.cur.grade.dirty=true;saveEss();renderBubbles(G.cur);}
+
+/* ---- 评分面板 ---- */
+function renderDims(type,vals){
+  const el=$('#dimSliders'); if(!el)return;
+  el.innerHTML=dimKeys(type).map(d=>`
+    <div class="sliderrow">
+      <div class="dn">${d.n}<div class="hint">权重 ${Math.round(d.w*100)}%</div></div>
+      <input type="range" min="0" max="15" step="0.5" value="${Number(vals[d.k])||0}" id="dim_${d.k}" oninput="updTotal()">
+      <div class="dv"><b id="dv_${d.k}">${(Number(vals[d.k])||0).toFixed(1)}</b> × ${(d.w*100).toFixed(0)}% = <b id="cv_${d.k}">${((Number(vals[d.k])||0)*d.w).toFixed(1)}</b></div>
+    </div>`).join('');
+}
+function updTotal(){
+  const type=G.cur.type;
+  const dims={};
+  dimKeys(type).forEach(d=>{
+    const v=Number($('#dim_'+d.k).value)||0; dims[d.k]=v;
+    const dv=$('#dv_'+d.k); if(dv)dv.textContent=v.toFixed(1);
+    const cv=$('#cv_'+d.k); if(cv)cv.textContent=(v*d.w).toFixed(1);
+  });
+  const total=calcTotal(type,dims);
+  const t=$('#totalBig'); if(t)t.textContent=total.toFixed(1);
+  $('#bandLine').innerHTML=bandChip(bandFrom(total))+' <span style="color:var(--muted)">自动档位（可改下拉）</span>';
+  $('#bandSel').value=bandFrom(total);
+}
+/* 保存批阅/发布/退回 */
+function collectGrade(){
+  const e=G.cur; if(!e)return null;
+  const dims={};
+  dimKeys(e.type).forEach(d=>{ const i=$('#dim_'+d.k); dims[d.k]= i?Number(i.value):((e.grade&&e.grade.dims&&e.grade.dims[d.k])||0); });
+  const total=calcTotal(e.type,dims);
+  const bandM=$('#bandSel')?$('#bandSel').value:null;
+  const grade={dims,total,band:bandM||bandFrom(total),bandM:bandM||bandFrom(total)};
+  return grade;
+}
+function saveGrade(silent){
+  if(!isFormal()){lockNotice('打分属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再保存批阅。');return;}
+  const e=G.cur; if(!e)return;
+  const g=collectGrade();
+  const ng=Object.assign({},e.grade||{},g);
+  if(e.type==='text'){ ng.rev=$('#revText')?$('#revText').value:null; }
+  ng.prep=$('#prepTxt').value;
+  ng.fb=$('#fbTxt').value;
+  if(!ng.inline) ng.inline=[];
+  ng.dirty=true;
+  e.grade=ng;
+  saveEss();
+  if(!silent)toast('批阅已保存（未发布，学生看不到）');
+  if(e._id){ gradeUpsert(ng).then(r=>{ if(r.ok){ng.dirty=false;saveEss();} }); }
+  refreshLockedUI(); renderDash(); renderStats(); renderRevList();
+}
+function publishEssay(){
+  if(!isFormal()){lockNotice('发布批阅属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再发布给学生。');return;}
+  const e=G.cur; if(!e)return;
+  if(confirm('发布批阅给学生？\n学生端将看到：分项得分、档位外的总评、批注与正式评语。')) {
+    saveGrade(true);
+    e.grade.status='published'; e.grade.pubAt=Date.now(); e.grade.dirty=true; saveEss();
+    if(e._id){ gradeUpsert(e.grade).then(r=>{ if(r.ok){e.grade.dirty=false;saveEss();} }); }
+    toast('✅ 已发布给学生');
+    renderDash(); renderStats(); renderRevList();
+  }
+}
+function returnEssay(){
+  if(!isFormal()){lockNotice('退回重写属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再退回。');return;}
+  const e=G.cur; if(!e)return;
+  showModal(`<h3>↩️ 退回重写</h3><p class="hint">学生将收到退回提示与理由，可重新提交。</p>
+    <label class="lb">退回理由 / 修改建议（将下发给学生）</label>
+    <textarea id="rt_txt" rows="3">${esc((e.grade&&e.grade.returnedMsg)||'请根据批注修改后重新提交。')}</textarea>
+    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn red" style="flex:1" onclick="confirmReturn()">确认退回</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function confirmReturn(){
+  const msg=$('#rt_txt').value.trim()||'请修改后重新提交';
+  const e=G.cur;
+  e.grade=Object.assign({},e.grade||{});
+  e.grade.returnedMsg=msg; e.grade.dirty=true; saveEss();
+  if(e._id){ gradeUpsert(e.grade).then(r=>{ if(r.ok){e.grade.dirty=false;saveEss();} }); }
+  closeModal(); toast('已退回，学生可重新提交');
+  renderDash(); renderStats(); renderRevList();
+}
+function togglePub(){
+  if(!G.cur)return;
+  const e=G.cur;
+  e.grade=Object.assign({},e.grade||{});
+  const map={submitted:'graded',graded:'published',published:'graded',returned:'submitted'};
+  e.grade.status=map[deriveStatus(e)]||'draft';
+  if(e.grade.status==='published') e.grade.pubAt=Date.now();
+  e.grade.dirty=true; saveEss();
+  if(e._id) gradeUpsert(e.grade).then(()=>{});
+  toast('状态 → '+deriveStatus(e));
+  renderDash(); renderStats(); renderRevList(); renderNotes();
+}
+
+/* 沉淀：范文 / 典型错误 */
+function addModel(){
+  if(!isFormal()){lockNotice('沉淀范文属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再收进范文库。');return;}
+  const e=G.cur; if(!e)return;
+  const g=e.grade||{};
+  if(e.type!=='text'&&!g.rev){
+    if(!confirm('当前是拍照作文且无文字稿。范文库建议放文本作文。仍要把该作文的教师修订稿（如有）存为范文？'))return;
+  }
+  showModal(`<h3>🏆 加入范文库</h3>
+    <label class="lb">显示作者</label>
+    <select id="m_anon"><option value="anon">匿名（推荐课堂用）</option><option value="named">显示作者姓名</option></select>
+    <label class="lb">教师点评（可选）</label><textarea id="m_note" rows="3">${esc(g.fb||'')}</textarea>
+    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn violet" style="flex:1" onclick="confirmModel()">存入范文库</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function confirmModel(){
+  const e=G.cur, show=$('#m_anon').value==='named';
+  const g=e.grade||{};
+  G.models.unshift({id:uid12(), aid:e.aid, title:(asgOf(e.aid)||{}).title||'', name:show?(e.name||''):'匿名',
+    body:g.rev||e.text||'', note:$('#m_note').value, ts:Date.now()});
+  saveAll(); closeModal(); toast('已入范文库');
+  if(G.v==='lib')renderLib();
+}
+/* AI 评估为 E 档时的一键收进：默认匿名 + 存 AI 评语/建议，课后可在库里改署名 */
+function quickModelE(){
+  if(!isFormal()){lockNotice('沉淀范文属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再收进范文库。');return;}
+  const e=G.cur; if(!e||!e.text){toast('该作文无文本稿，无法收为范文');return;}
+  const ai=e.ai||{};
+  G.models.unshift({id:uid12(),aid:e.aid,title:(asgOf(e.aid)||{}).title||'',name:'匿名',
+    body:e.text||'', note:('AI：'+((ai.comment||'')+' '+(ai.advice||'')).trim()), ts:Date.now()});
+  saveAll(); toast('⭐ 已收进范文库（匿名）');
+  if(G.v==='lib')renderLib();
+}
+function quickWrong(){
+  if(!isFormal()){lockNotice('沉淀典型错误属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再收进错误库。');return;}
+  const e=G.cur;
+  const sel=window.getSelection?window.getSelection().toString().trim():'';
+  showModal(`<h3>⚠️ 收进典型错误库（自动脱敏）</h3>
+    <label class="lb">错误片段</label><textarea id="w_q" rows="2">${esc(sel||'')}</textarea>
+    <label class="lb">正确 / 修改建议</label><textarea id="w_fix" rows="2"></textarea>
+    <label class="lb">类型</label>
+    <select id="w_t"><option>语法</option><option>词汇搭配</option><option>格式</option><option>篇章连贯</option><option>中式英语</option><option>书写/卷面</option></select>
+    <div style="display:flex;gap:10px;margin-top:14px"><button class="btn orange" style="flex:1" onclick="confirmWrong()">存入典型错误库</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function confirmWrong(){
+  const q=$('#w_q').value.trim(), fix=$('#w_fix').value.trim(), t=$('#w_t').value;
+  if(!q&&!fix){toast('请至少填写错误片段或建议');return;}
+  G.wrongs.unshift({id:uid12(),q,fix,type:t,ts:Date.now(),aid:G.cur?G.cur.aid:''});
+  saveAll(); closeModal(); toast('已入典型错误库');
+  if(G.v==='lib')renderLib();
+}
+/* ================= 学情统计 ================= */
+function renderStats(){
+  const sub=G.ess.filter(e=>['submitted','graded','published','returned'].includes(deriveStatus(e)));
+  const graded=sub.filter(e=>{const s=deriveStatus(e); return s==='graded'||s==='published';});
+  const avg=graded.length?graded.reduce((s,e)=>s+(Number(e.grade&&e.grade.total)||0),0)/graded.length:0;
+  $('#statsKpis').innerHTML=`<div class="kpi t"><div class="kn">收到作文</div><div class="num">${sub.length}</div></div>
+    <div class="kpi b"><div class="kn">已批 / 发布</div><div class="num">${graded.length}<small style="font-size:14px"> / ${sub.filter(e=>deriveStatus(e)==='published').length}</small></div></div>
+    <div class="kpi g"><div class="kn">平均分 / 15</div><div class="num">${avg?avg.toFixed(1):'—'}</div></div>
+    <div class="kpi o"><div class="kn">退回重写中</div><div class="num">${sub.filter(e=>deriveStatus(e)==='returned').length}</div></div>`;
+  // —— 两层档位分布：AI 预评估（按 e.ai.band） + 正式批阅（按 e.grade）——
+  // 1) AI 预评估概览（课堂预览也可看）
+  const aiDist={E:0,P:0,C:0,D:0,Em:0};
+  G.ess.forEach(e=>{const k=e.ai&&e.ai.band; if(k&&aiDist[k]!=null)aiDist[k]++;});
+  const aiN=G.ess.reduce((n,e)=>n+((e.ai&&e.ai.band)?1:0),0);
+  const aiEl=$('#aiOverview'), aiHint=$('#aiOverviewHint'), aiCnt=$('#aiCount');
+  if(aiN>0){
+    const mx=Math.max(1,...Object.values(aiDist));
+    aiHint.style.display='none'; aiEl.style.display='';
+    aiEl.innerHTML=BANDS.map(b=>`<div class="hcol c${b.k}"><div class="cnt">${aiDist[b.k]}</div><div class="fill" style="height:${(aiDist[b.k]/mx*100)}%"></div><div class="lb"><b>${b.label}</b>${b.range}<br>${b.zh}</div></div>`).join('');
+    if(aiCnt)aiCnt.textContent='已评估 '+aiN+' 篇';
+  } else { aiEl.style.display='none'; if(aiHint)aiHint.style.display=''; if(aiCnt)aiCnt.textContent=''; }
+  // 2) 正式批阅分布（已批/已发布）
+  const dist={E:0,P:0,C:0,D:0,Em:0};
+  graded.forEach(e=>{const g=e.grade||{}; const k=g.band||bandFrom(g.total||0); if(dist[k]!=null)dist[k]++;});
+  const hist=$('#bandHist'), bHint=$('#bandHint'), bCnt=$('#bandCount');
+  if(graded.length){
+    const mx=Math.max(1,...Object.values(dist));
+    bHint.style.display='none'; hist.style.display='';
+    hist.innerHTML=BANDS.map(b=>`<div class="hcol c${b.k}"><div class="cnt">${dist[b.k]}</div><div class="fill" style="height:${(dist[b.k]/mx*100)}%"></div><div class="lb"><b>${b.label}</b>${b.range}<br>${b.zh}</div></div>`).join('');
+    if(bCnt)bCnt.textContent='已批阅 '+graded.length+' 篇';
+  } else { hist.style.display='none'; if(bHint)bHint.style.display=''; if(bCnt)bCnt.textContent=''; }
+  // 表格
+  const tb=$('#statsTable tbody');
+  tb.innerHTML=G.asg.length?G.asg.map(a=>{
+    const es=essaysOf(a.aid);
+    const g=es.filter(e=>{const s=deriveStatus(e);return s==='graded'||s==='published';});
+    const p=es.filter(e=>deriveStatus(e)==='published');
+    const av=g.length?g.reduce((s,e)=>s+(Number(e.grade&&e.grade.total)||0),0)/g.length:0;
+    return `<tr><td class="l"><b>${esc(a.title)}</b></td><td>${es.length}</td><td>${g.length}</td><td>${p.length}</td><td><b>${av?av.toFixed(1):'—'}</b></td>
+      <td><div class="bar" style="min-width:120px"><i style="width:${es.length?pct(g.length/es.length):0}%;background:linear-gradient(90deg,#5aa2f0,#38a169)"></i></div></td></tr>`;
+  }).join(''):'<tr><td colspan="6">暂无数据</td></tr>';
+}
+/* ================= 范文 & 典型库 ================= */
+function renderLib(){
+  const m=$('#modelList');
+  if(!m)return;
+  m.innerHTML=G.models.length?G.models.map((x,i)=>`<div class="essay-row"><div style="flex:1">
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><b>🏆 ${esc(x.title||'')}</b><span class="pill dim">作者：${esc(x.name||'匿名')}</span></div>
+      <div style="white-space:pre-wrap;background:#fafcff;border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0">${esc(x.body||'')}</div>
+      ${x.note?`<div class="note-chip" style="background:#e6f4ea;border-color:#b7e2c4;color:#1f7a43">💬 ${esc(x.note)}</div>`:''}</div>
+      <div><button class="btn sm ghost" onclick="libAuthor(${i})">${x.name==='匿名'?'改为署名':'改为匿名'}</button>
+      <button class="btn sm red" onclick="rmLib('m',${i})">🗑</button></div></div>`).join('')
+    :'<div class="hint">暂无范文。批阅时点「🏆 收进范文库」即可沉淀。</div>';
+  const w=$('#wrongList');
+  w.innerHTML=G.wrongs.length?G.wrongs.map((x,i)=>`<div class="essay-row"><div style="flex:1">
+      <div class="flex" style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill ${x.type==='语法'?'r':x.type==='格式'?'w':'v'}">${esc(x.type||'语法')}</span></div>
+      ${x.q?`<div style="margin-top:4px"><b style="color:var(--red)">✗ </b><span style="text-decoration:line-through">${esc(x.q)}</span></div>`:''}
+      ${x.fix?`<div style="color:var(--green)"><b>✓ </b>${esc(x.fix)}</div>`:''}</div>
+      <button class="btn sm red" onclick="rmLib('w',${i})">🗑</button></div>`).join('')
+    :'<div class="hint">暂无典型错误。批阅时点「⚠️ 收进典型错误库」即可沉淀（自动脱敏，不存姓名）。</div>';
+}
+function libAuthor(i){G.models[i].name=G.models[i].name==='匿名'?'署名作者':''; if(G.models[i].name==='署名作者'){G.models[i].name=prompt('输入作者姓名','')||'匿名';} saveAll(); renderLib();}
+function rmLib(k,i){ if(k==='m')G.models.splice(i,1); else G.wrongs.splice(i,1); saveAll(); renderLib(); }
+
+/* ================= 模态 ================= */
+function showModal(html,noFixed){ const m=$('#modal'); m.style.display='block'; $('#modalBox').innerHTML=html; }
+function closeModal(){ $('#modal').style.display='none'; }
+$('#modal').addEventListener('click',e=>{ if(e.target.id==='modal')closeModal(); });
+
+/* ================= 学生端 ================= */
+async function initStudentUI(){
+  const params=new URLSearchParams(location.search);
+  G.stuAid=params.get('aid');
+  $('#stuWrap').style.display='';
+  // 学生端先拉一次云端作业列表（老师已推送过即可显示）
+  try{ const r=await getCloudAssignments(true); if(!r.error){ r.list.forEach(c=>{ if(c&&c.aid&&!G.asg.find(a=>a.aid===c.aid)) G.asg.push(c); }); } }catch(e){}
+  renderStudent();
+}
+function renderStudent(){
+  const m=$('#stuMain');
+  if(!G.stu.name||!G.stu.sid){ m.innerHTML=stuCard(`<h3 style="text-align:center">👋 先登记一下</h3>
+      <div style="text-align:center;margin:10px 0 4px">${esc(G.stuAid?((asgOf(G.stuAid)&&asgOf(G.stuAid).title)||'本次作业'):'')}</div>
+      <label class="lb">姓名</label><input id="sin" value="${esc(G.stu.name)}" style="width:100%">
+      <label class="lb">学号</label><input id="sis" value="${esc(G.stu.sid)}" style="width:100%">
+      <button class="btn green" style="width:100%;margin-top:14px" onclick="saveStu()">进入提交</button>`); return; }
+  if(!G.stuAid){ listStuAssigns(m); return; }
+  showStuAssign(m);
+}
+function stuCard(html){ return `<div style="max-width:640px;margin:16px auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--shadow)">${html}</div>`; }
+function saveStu(){
+  G.stu.name=$('#sin').value.trim(); G.stu.sid=$('#sis').value.trim();
+  if(!G.stu.name||!G.stu.sid){toast('请填写姓名和学号');return;}
+  LS.set('ea_stuname',G.stu.name); LS.set('ea_stusid',G.stu.sid);
+  renderStudent();
+}
+async function listStuAssigns(m){
+  const a=G.asg.filter(x=>x.open!==false);
+  const rows=a.map(x=>`<div class="essay-row"><div style="flex:1"><b>${esc(x.title)}</b>
+    <div class="meta">${x.type==='text'?'仅文本':x.type==='photo'?'仅拍照':'文本/拍照'}</div>
+    <div class="hint">${esc((x.task||'').slice(0,120))}</div></div>
+    <button class="btn teal sm" onclick="pickAid('${x.aid}')">选择</button></div>`).join('');
+  m.innerHTML=stuCard(`<h3 style="text-align:center">📋 选择作业</h3>${rows||'<div class="hint" style="text-align:center">暂无可提交的作业——请用老师发布的「学生提交码」进入指定作业。</div>'}`);
+}
+function pickAid(aid){G.stuAid=aid;renderStudent();}
+async function showStuAssign(m){
+  const a=asgOf(G.stuAid)||{title:'作业',type:'any',task:''};
+  // 后台拉一次最新 grade（教师批阅过的可能在云端），不阻塞学生提交界面
+  cloudGrades().then(gs=>{
+    if(!gs||!gs.length) return;
+    G.ess.forEach(e=>{ const g=gs.find(x=>x.eid===e._id); if(g && (!e.grade || (g.up||0)>(e.grade.up||0))) e.grade=g; });
+    saveEss(); if(typeof renderStudent==='function') renderStudent();
+  }).catch(e=>console.error('cloudGrades background fetch failed',e));
+  // 我的既有记录
+  const all=G.ess.filter(e=>e.aid===G.stuAid&&e.sid===G.stu.sid&&e.name===G.stu.name);
+  const last=all[all.length-1];
+  const draft=LS.get('ea_draft_'+G.stu.sid+'_'+G.stuAid,{});
+  m.innerHTML=stuCard(`<h3>📝 ${esc(a.title)}</h3>
+    <div class="hint" style="white-space:pre-wrap">${esc(a.task||'')}</div>
+    <div style="margin:14px 0">${statusBanner(last)}</div>
+    <div id="feedBox"></div>
+    ${submitForm(a,last,draft)}
+    ${feedbackBlock(last)}
+    <button class="btn ghost sm" onclick="resetStu()" style="margin-top:12px">↩ 切换身份 / 返回</button>`);
+  initSubmit();
+  if(last&&deriveStatus(last)==='published') renderFeed(last);
+}
+function statusBanner(last){
+  if(!last)return '<span class="pill p">📝 尚未提交</span>';
+  const s={submitted:['已提交，待老师批阅','g'],graded:['老师已批阅（未发布）','p'],published:['✅ 老师已发布批阅，点击下方查看','s'],returned:['↩️ 被退回：请修改后重新提交','r']}[deriveStatus(last)]||['已提交','dim'];
+  return `<span class="pill ${s[1]}" style="font-size:14px;padding:6px 14px">${s[0]}</span>`;
+}
+function canSubmit(last){ return true; }
+function submitForm(a,last,draft){
+  const type=a.type||'any';
+  const status=last?deriveStatus(last):'';
+  const isResubmit=!!last && status!=='returned';
+  const sel=(t)=>`<label class="lb">提交方式</label>
+    <div style="display:flex;gap:8px">
+      <button class="btn ${'segbtn'} ${last&&last.type==='text'||(!last&&type!=='photo')?'teal':'ghost'}" onclick="chType('text',this)">⌨️ 电子文本</button>
+      <button class="btn ${last&&last.type==='photo'||type==='photo'?'teal':'ghost'}" onclick="chType('photo',this)">📷 拍照作文</button>
+    </div>`;
+  return `<div style="border-top:1px dashed var(--line);margin:14px 0 4px;padding-top:10px">
+    <h4 style="margin-top:0">${isResubmit?'📤 重新提交（覆盖上次）':'📝 我的作文'}</h4>
+    ${isResubmit?'<div class="hint" style="color:#c2410c;margin-bottom:8px">⚠️ 你已提交过该作业，重新提交会覆盖上次给老师看到的内容。</div>':''}
+    ${type==='any'?sel(''):''}
+    <div id="submitPane">${type==='photo'?photoPane():textPane(draft)}</div>
+    <div id="selfck"></div>
+    <div id="submitMsg" style="min-height:28px;margin:8px 0;font-size:14px;line-height:1.5"></div>
+    <button id="submitBtn" class="btn green" style="width:100%;margin-top:4px" onclick="doSubmit()">🚀 ${isResubmit?'重新提交给老师':'提交给老师'}</button>
+    <div class="hint" style="text-align:center;margin-top:8px">提交前可点「🔍 AI 自查」（轻量检查：字数/要点提示）</div></div>`;
+}
+let STU_TYPE='text';
+function chType(t,btn){
+  STU_TYPE=t;
+  $$('#submitPane').forEach(x=>x);
+  const pane=$('#submitPane'); if(!pane)return;
+  pane.innerHTML=t==='photo'?photoPane():textPane(LS.get('ea_draft_'+G.stu.sid+'_'+G.stuAid,{}));
+  initSubmit();
+  // 高亮
+  const p=btn.parentElement; [...p.children].forEach(b=>b.className='btn'); btn.className='btn teal';
+}
+function textPane(draft){
+  return `<label class="lb">作文正文（建议 60–120 词）</label>
+    <textarea id="stuText" rows="10" placeholder="在此输入或粘贴你的英文作文…">${esc(draft.text||'')}</textarea>
+    <div class="hint" id="wc">0 词 · 0 字符</div>
+    <div class="flex" style="margin-top:8px"><button class="btn sm ghost" onclick="saveDraftTxt()">💾 保存草稿</button>
+    <button class="btn sm violet" onclick="selfCheck()">🔍 AI 自查（本地提示）</button></div>`;
+}
+function photoPane(){
+  return `<label class="lb">上传作文照片（字迹清晰）</label>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label class="btn teal" style="cursor:pointer">📷 选择/重拍照片<input type="file" accept="image/*" capture="environment" id="phIn" style="display:none"></label>
+      <button class="btn sm ghost" onclick="saveDraftPhoto()">💾 暂存草稿</button>
+      <span class="hint">支持直接拍照或相册选择</span></div>
+    <div id="phPrev" style="margin-top:10px"></div>`;
+}
+function initSubmit(){
+  // 默认类型按当前面板推断：只有拍照输入框 → photo，否则 text
+  STU_TYPE = (!document.getElementById('stuText') && document.getElementById('phIn')) ? 'photo' : 'text';
+  const t=document.getElementById('stuText');
+  if(t){ const upd=()=>{ const wc=t.value.trim()?t.value.trim().split(/\s+/).length:0; $('#wc').textContent=wc+' 词 · '+t.value.length+' 字符'; }; t.addEventListener('input',upd); upd(); }
+  const ph=document.getElementById('phIn');
+  if(ph){ ph.onchange=async e=>{ const f=e.target.files[0]; if(!f)return; const data=await shrink(f); const p=$('#phPrev'); p.innerHTML=`<img src="${data}" style="max-width:100%;border-radius:12px;border:1px solid var(--line)">`;
+      STU_TYPE='photo';
+    }; }
+}
+function shrink(file,max=1100,q=.74){
+  return new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=e=>{ const im=new Image(); im.onload=()=>{ const s=Math.min(1,max/Math.max(im.width,im.height)); const cv=document.createElement('canvas');
+      cv.width=Math.round(im.width*s); cv.height=Math.round(im.height*s); cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+      res(cv.toDataURL('image/jpeg',q)); }; im.onerror=rej; im.src=e.target.result; }; rd.onerror=rej; rd.readAsDataURL(file); });
+}
+function setMsg(el,html,type){
+  if(!el)return; const colors={info:'#185FA5',success:'#38a169',danger:'#e5484d'};
+  el.innerHTML='<span style="color:'+(colors[type]||colors.info)+'">'+html+'</span>';
+}
+function saveDraftTxt(){ const t=$('#stuText'); if(!t)return; LS.set('ea_draft_'+G.stu.sid+'_'+G.stuAid,{text:t.value,type:'text'}); toast('草稿已保存（本机）'); }
+function saveDraftPhoto(){ const img=$('#phPrev img'); if(!img){toast('请先选择照片');return;} LS.set('ea_draft_'+G.stu.sid+'_'+G.stuAid,{img:img.src,type:'photo'}); toast('照片草稿已暂存（本机）'); }
+function selfCheck(){
+  const box=$('#selfck'); if(!box)return;
+  const t=$('#stuText'); const txt=t?t.value.trim():'';
+  const tips=[];
+  const wc=txt?txt.split(/\s+/).length:0;
+  if(wc<50)tips.push('字数偏少（当前 '+wc+' 词），PRETCO-A 应用文建议 60–120 词');
+  if(!/\b(yours sincerely|sincerely|yours faithfully)\b/i.test(txt))tips.push('书信类结尾检查：是否用了 Yours sincerely 等套语？');
+  if(/[\u4e00-\u9fff]/.test(txt))tips.push('正文出现中文字符，请改为英文');
+  const first=/\b(i)\b/g; if((txt.match(/\bi\b/g)||[]).length>0 && !/\bi\b/.test(txt)){}
+  if(!tips.length)tips.push('✅ 初步看起来不错（字数 '+wc+'）——这只是自查，正式以老师批阅为准');
+  box.innerHTML='<div class="subbox" style="background:#f0f7ff;border:1px solid #cfe2ff;border-radius:12px;padding:10px 12px;margin:8px 0">'+tips.map(x=>'<div>• '+x+'</div>').join('')+'</div>';
+}
+async function doSubmit(){
+  const btn=$('#submitBtn'); const msg=$('#submitMsg');
+  if(!G.stu.name||!G.stu.sid){ setMsg(msg,'请填写姓名和学号','danger'); return; }
+  const isPhoto=STU_TYPE==='photo';
+  const imgEl=$('#phPrev img'); const txt=$('#stuText')?$('#stuText').value.trim():'';
+  let img=null;
+  if(isPhoto){ img=imgEl?imgEl.src:null; if(!img){ setMsg(msg,'请先选择照片','danger'); return; } }
+  else { if(!txt){ setMsg(msg,'请先输入作文内容','danger'); return; } if(txt.split(/\s+/).length<30){ if(!confirm('字数较少（'+txt.split(/\s+/).length+' 词），确定提交？'))return; } }
+  const payload={ aid:G.stuAid, sid:G.stu.sid, name:G.stu.name, type:isPhoto?'photo':'text', text:isPhoto?'':txt, img:img||null, status:'submitted' };
+  if(btn){btn.disabled=true; btn.textContent='🚀 提交中…'; btn.className='btn green';}
+  setMsg(msg,'正在提交到云端…','info');
+  const timeoutMs=12000;
+  const addPromise=essayAdd(payload);
+  const timeoutPromise=new Promise(_=>setTimeout(()=>_({error:'提交超时：云端未在 '+timeoutMs/1000+' 秒内响应，请检查网络或刷新重试。'}),timeoutMs));
+  const r=await Promise.race([addPromise,timeoutPromise]);
+  if(r.ok){
+    const rec=Object.assign({_id:r._id,up:Date.now(),ts:Date.now()},payload);
+    const idx=G.ess.findIndex(e=>e.aid===G.stuAid&&e.sid===G.stu.sid&&e.name===G.stu.name);
+    if(idx>=0){G.ess[idx]=rec;}else{G.ess.push(rec);}
+    saveEss(); LS.remove('ea_draft_'+G.stu.sid+'_'+G.stuAid);
+    toast('✅ 提交成功！');
+    if(!isPhoto && txt && txt.trim().length>=20){ autoGrade(r._id, txt, 'text'); }
+    renderStudent();
+  } else {
+    if(btn){btn.disabled=false; btn.textContent='🚀 重新提交';}
+    LS.set('ea_draft_'+G.stu.sid+'_'+G.stuAid,payload);
+    const hint='❌ 提交失败：'+esc(r.error||'未知')+'<br><span style="font-size:13px;color:#666">你的作文已自动保存到本机草稿，可检查网络后点上方按钮重试。若反复失败，请把这段错误信息发给老师。</span>';
+    setMsg(msg,hint,'danger');
+  }
+}
+function resetStu(){ G.stu.name='';G.stu.sid='';LS.set('ea_stuname','');LS.set('ea_stusid','');G.stuAid=null;renderStudent(); }
+/* 查看批阅反馈 */
+function feedbackBlock(last){
+  if(last&&deriveStatus(last)==='published') return `<div style="display:none" id="feedAnchor"></div>`;
+  return '';
+}
+function renderFeed(e){
+  const box=$('#feedBox'); if(!box)return;
+  const g=e.grade||{}; const dims=g.dims||{}; const ws=dimKeys(e.type);
+  let html=`<div style="background:#f6fbf8;border:1px solid #cfe8d8;border-radius:14px;padding:14px 16px;margin-top:6px">
+    <h4 style="margin-top:0">✅ 老师的批阅结果</h4>
+    <div style="text-align:center"><div class="bigscore">${Number(g.total||0).toFixed(1)} <span style="font-size:18px;color:var(--muted)">/ 15</span></div>
+    <div>${g.band?bandChip(g.band):''}</div></div>
+    ${ws.map(d=>{const v=Number(dims[d.k])||0; return `<div class="dimbar"><div class="d">${d.n}</div><div class="bar"><i style="width:${v/15*100}%"></i></div><div class="sc">${v.toFixed(1)} / 15</div></div>`;}).join('')}
+    ${(g.inline&&g.inline.length)?`<div style="margin-top:8px"><b>📌 批注</b>${g.inline.map(n=>`<div class="note-chip">${n.p!=null?'第'+(n.p+1)+'段：':''}${esc(n.txt)}</div>`).join('')}</div>`:''}
+    ${g.fb?`<div style="margin-top:10px"><b>💬 老师总评</b><div style="white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px">${esc(g.fb)}</div></div>`:''}
+    ${g.returnedMsg?`<div style="margin-top:10px;background:#fff5f5;border:1px solid #fecaca;padding:10px;border-radius:10px"><b style="color:var(--accent-red)">↩️ 退回理由：</b>${esc(g.returnedMsg)}</div>`:''}
+    <div style="margin-top:12px"><button class="btn sm ghost" onclick="exportResult()">📥 导出我的成绩单（txt）</button></div></div>`;
+  box.innerHTML=html;
+}
+function exportResult(){
+  const list=G.ess.filter(x=>x.aid===G.stuAid&&x.sid===G.stu.sid&&x.name===G.stu.name);
+  const e=list[list.length-1]; if(!e){toast('暂无记录');return;}
+  const g=e.grade||{};
+  if(deriveStatus(e)!=='published'){toast('老师还未发布批阅');return;}
+  const ws=dimKeys(e.type); const a=asgOf(G.stuAid);
+  let s=`英语作文成绩单\n作业：${a?a.title:''}\n姓名：${e.name}  学号：${e.sid}\n总分：${Number(g.total||0).toFixed(1)} / 15\n`;
+  s+='分项：\n'+ws.map(d=>`  ${d.n}（权重${Math.round(d.w*100)}%）：${Number((g.dims||{})[d.k]||0).toFixed(1)}`).join('\n')+'\n';
+  if(g.inline&&g.inline.length)s+='\n批注：\n'+g.inline.map(n=>`  - ${n.txt}`).join('\n');
+  if(g.fb)s+='\n老师总评：\n'+g.fb;
+  dl('我的作文成绩_'+e.name+'.txt',s);
+}
+function dl(name,text){
+  const blob=new Blob(['\uFEFF'+text],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ================= 云配置 ================= */
+function openEnvModal(){
+  showModal(`<h3>⚙️ 云端配置（CloudBase + AI）</h3>
+    <p class="hint">环境 ID：college-english-d9ffi87h93f30a34。集合 <b>assignments</b> / <b>essays</b> / <b>essayGrades</b> 均已就绪。</p>
+    <label class="lb">环境 ID</label><input id="envInput" value="${esc(LS.get('cloudEnv',CLOUD_ENV))}" style="width:100%">
+    <div id="envMsg" class="hint"></div>
+    <div style="border-top:1px dashed var(--line);margin:14px 0 8px"></div>
+    <label class="lb">🤖 AI 评分 Key（火山引擎 ARK，可选）</label>
+    <div style="display:flex;gap:8px">
+      <input id="arkInput" type="password" value="${esc(LS.get('ea_arkkey',''))}" placeholder="ark-…（用于 AI 预评估）" style="flex:1">
+      <button class="btn sm ghost" onclick="toggleArkShow()">👁 显示</button>
+    </div>
+    <p class="hint" style="font-size:13px">Key 只保存在你自己这台电脑的浏览器里，不写进网页文件、不发给学生。留空则禁用 AI 预评估。</p>
+    <label class="lb" style="margin-top:10px">🧠 模型 ID（火山方舟）</label>
+    <input id="arkModelInput" value="${esc(LS.get('ea_arkmodel','')||AI_MODEL)}" placeholder="如 doubao-seed-2-1-lite-260915 或 ep-xxxxxxxx" style="width:100%">
+    <p class="hint" style="font-size:13px">填火山方舟「模型广场」里的模型 ID，或「在线推理」接入点的 ep- 开头 ID。留空则用云函数默认模型（doubao-seed-2-1-lite-260915）。</p>
+    <div class="flex" style="margin-top:12px">
+      <button class="btn green" onclick="saveEnv()">保存</button>
+      <button class="btn ghost" onclick="testCloud()">测试连接</button>
+      <button class="btn ghost" onclick="testAI()">测试 AI</button>
+      <button class="btn ghost" onclick="closeModal()">关闭</button>
+    </div>`,false);
+}
+function saveEnv(){ LS.set('cloudEnv',$('#envInput').value.trim()); LS.set('ea_arkkey',($('#arkInput')?$('#arkInput').value.trim():'')); LS.set('ea_arkmodel',($('#arkModelInput')?$('#arkModelInput').value.trim():'')); _cb=null;_cbIn=false; $('#envMsg').textContent='已保存'; toast('配置已保存'); }
+async function testAI(){
+  const box=$('#envMsg');
+  const inp=$('#arkInput'); const v=inp?inp.value.trim():'';
+  if(v) LS.set('ea_arkkey', v);
+  const mi=$('#arkModelInput'); if(mi&&mi.value.trim()) LS.set('ea_arkmodel', mi.value.trim());
+  const sample='Dear Sir, I am writing to apply for the job. I am a student and I am good at English. I hope to get a chance. Yours, Li Ming';
+  if(box) box.innerHTML='<span style="color:#3182ce">正在调用云函数 arkProxy（最多 35 秒）…</span>';
+  toast('AI 测试中…');
+  const pr=await aiEvalProxy(sample,'text');
+  if(!pr.error){
+    if(box) box.innerHTML='<span style="color:#2f855a">✅ 云函数代理正常。档位 '+esc(String(pr.band||'-'))+'，总分 '+esc(String(pr.total!=null?pr.total:'-'))+'</span>';
+    toast('✅ 云函数代理可用'); return;
+  }
+  if(box) box.innerHTML='<div style="color:#c53030;line-height:1.7">❌ 云函数代理失败：'+esc(pr.error)+'</div>'
+    +'<div class="hint" style="margin-top:6px;line-height:1.7">按顺序排查：① 函数名是否叫 <b>arkProxy</b>；② 函数代码是否点过蓝色「保存」并提示部署成功；③ 「函数配置 → 环境变量」是否有 <b>ARK_API_KEY</b>；④ 私有网络是否关闭（关闭=默认有公网访问）。</div>';
+  toast('❌ AI 代理失败，请看下方原因');
+}
+function toggleArkShow(){ const i=$('#arkInput'); if(!i)return; i.type = i.type==='password'?'text':'password'; }
+
+/* ================= AI 预评估（火山引擎 ARK 直连，Key 仅存教师本机 LS） ================= */
+function aiPrompt(text){
+  return `你是PRETCO-A（高等学校英语应用能力A级）高职英语写作评分助手。请对下面这篇学生作文按15分制打分，并严格只输出一个JSON对象（不要输出任何其他文字、不要用markdown代码块）：
+{"band":"E或P或C或D或Em","total":0到15的整数,"dims":{"task":任务完成度0-15,"lang":语言准确性0-15,"format":格式规范0-15,"coh":连贯与词汇句式0-15},"comment":"一句中文总评","advice":"一条最关键的修改建议"}
+档位标准：13-14=E(圆满完成任务),10-12=P(较好完成),7-9=C(基本完成),4-6=D(部分完成),0-3=Em(几乎未完成)。
+
+作文：
+${text.slice(0,3000)}`;
+}
+/* 云函数代理：教师端与学生端统一经此后端调 Ark，Key 仅存云函数环境变量，不暴露给学生 */
+async function aiEvalProxy(text,type){
+  const app=await cbReady(); if(!app) return {error:'未登录云端，无法使用 AI 代理'};
+  try{
+    const res=await Promise.race([
+      app.callFunction({name:'arkProxy', data:{text, type:type||'text'}}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('云函数 arkProxy 35 秒无响应（未部署成功 / 函数名不符 / 无法访问外网 / ARK_API_KEY 未配置）')),35000))
+    ]);
+    const r=res&&res.result;
+    if(r&&r.error) return {error:r.error};
+    if(r&&r.result) return r.result;
+    return {error:'AI 代理无有效返回'};
+  }catch(e){ return {error:'AI 代理调用失败：'+(e&&e.message||e)}; }
+}
+async function autoGrade(eid, text, type){
+  if(!eid||!text||text.trim().length<20) return;
+  const r=await aiEvalProxy(text,type);
+  if(r.error){ console.warn('自动评分跳过：',r.error); return; }
+  const g={ eid:eid, aid:G.stuAid||'', auto:true, status:'auto',
+            dims:r.dims||null, band:r.band||null, total:r.total!=null?r.total:null,
+            rev:r.comment||null, inline:[], prep:'', fb:r.advice||'', pen:null, bubbles:[],
+            up:Date.now(), ts:Date.now(), dirty:false };
+  const gr=await gradeUpsert(g);
+  if(gr&&gr.ok){ toast('🤖 AI 已自动评分（教师可覆盖）'); }
+}
+
+async function aiEval(text,type){
+  if(!text||text.trim().length<20) return {error:'作文内容太短，无法评估'};
+  // 浏览器直连火山引擎会被跨域(CORS)拦截而挂起（已实测 ark 不返回 Access-Control-Allow-Origin），故优先走云函数代理（服务器端调用，key 不暴露、不被 CORS 拦）
+  const pr=await aiEvalProxy(text,type);
+  if(!pr.error) return pr;
+  const proxyErr='云函数代理失败：'+(pr.error||'未知原因');
+  // 代理不可用：尝试教师本机 Key 直连（浏览器直连几乎必被 CORS 拦截，仅作最后兜底）
+  const key=LS.get('ea_arkkey','');
+  if(key){
+    const model=(LS.get('ea_arkmodel','')||AI_MODEL);
+    if(!model) return {error:'请先在「⚙️ 云端配置 → 模型 ID」填写火山方舟模型 ID（如 doubao-seed-2-1-lite-260915 或 ep- 接入点 ID）'};
+    const body={model:model,messages:[{role:'user',content:aiPrompt(text)}],max_tokens:600,temperature:0.2};
+    try{
+      const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify(body),signal:ctrl.signal});
+      clearTimeout(to);
+      if(!r.ok){ const t=await r.text().catch(()=>''); if(r.status===400&&/InvalidEndpoint|ClosedEndpoint/i.test(t||'')) return {error:'模型 ID 不可用（已关闭/不存在）。请到「⚙️ 云端配置」把「模型 ID」改成你账号已开通的模型（或接入点 ep- 开头 ID）后重试。'}; return {error:'AI接口 HTTP '+r.status+'：'+(t||'').slice(0,220)}; }
+      const j=await r.json();
+      const msg=(j.choices&&j.choices[0]&&j.choices[0].message)||{};
+      const content=(msg.content||'').trim();
+      const reasoning=(msg.reasoning_content||'').trim();
+      const obj=extractJson(content)||extractJson(reasoning);
+      if(!obj) return {error:'AI 未返回有效评分（返回：'+(content||reasoning||'').slice(0,160)+'）'};
+      if(obj.band==null||obj.total==null) return {error:'AI 返回缺少 band/total'};
+      return obj;
+    }catch(e){
+      if(e&&(e.name==='AbortError'||/abort/i.test(e.message||''))) return {error:proxyErr+'；浏览器直连也超时（8秒，CORS 拦截）。请先修好云函数：确认 arkProxy 已「保存」部署成功、函数配置里有环境变量 ARK_API_KEY。'};
+      if(/Failed to fetch|NetworkError|network/i.test(e.message||'')) return {error:proxyErr+'；浏览器直连被 CORS 拦截（'+(e.message||'')+'）。'};
+      return {error:proxyErr+'；直连异常：'+(e&&e.message||e)};
+    }
+  }
+  // 既无代理也无本机 Key：给出明确指引
+  return {error:proxyErr+'；本机也未配置 Ark Key。请到 CloudBase 控制台确认 arkProxy 云函数已部署，并在「函数配置 → 环境变量」添加 ARK_API_KEY。'};
+}
+
+/* 健壮提取：逐字符扫描，找第一个「闭合」的 JSON 对象（兼容尾随文字 / 推理模型把 JSON 放进 reasoning_content） */
+function extractJson(text){
+  if(!text) return null;
+  const s=text.indexOf('{'); if(s<0) return null;
+  let depth=0, inStr=false, esc=false;
+  for(let i=s;i<text.length;i++){
+    const c=text[i];
+    if(inStr){ if(esc)esc=false; else if(c==='\\')esc=true; else if(c==='"')inStr=false; }
+    else { if(c==='"')inStr=true; else if(c==='{')depth++; else if(c==='}'){ depth--; if(depth===0){ try{return JSON.parse(text.slice(s,i+1));}catch(e){return null;} } } }
+  }
+  return null;
+}
+function applyAiToEssay(e,res){
+  // AI 结果只存独立 e.ai 字段，不写进 e.grade，避免把「AI 预评估」误判为「已正式批阅」
+  e.ai=Object.assign({},e.ai||{}, {band:res.band,total:Number(res.total),dims:res.dims||{},comment:res.comment||'',advice:res.advice||'',ts:Date.now()});
+}
+async function aiGradeOne(){
+  const e=G.cur; if(!e)return;
+  if(e.type!=='text'){ toast('拍照作文暂不支持 AI 自动评分，请人工批阅'); return; }
+  const btn=$('#aiBtn'); if(btn){btn.disabled=true; btn.textContent='🤖 评估中…';}
+  const res=await aiEval(e.text,e.type);
+  if(res.error){ if(btn){btn.disabled=false; btn.textContent='🤖 AI 预评估';} toast('❌ '+res.error); return; }
+  applyAiToEssay(e,res); saveEss();
+  renderDims(e.type, res.dims||{});
+  $('#totalBig').textContent=Number(res.total).toFixed(1);
+  $('#bandLine').innerHTML=bandChip(res.band)+' <span style="color:var(--muted)">AI 档位</span>';
+  $('#bandSel').value=res.band;
+  const box=$('#aiBox');
+  if(box){
+    let html=`<div style="background:#f0f7ff;border:1px solid #cfe2ff;border-radius:12px;padding:10px 12px;margin-top:10px"><b>🤖 AI 建议（仅教师可见）</b><div style="margin-top:4px">${esc(res.comment||'')}</div><div style="color:#c2410c;margin-top:4px">💡 ${esc(res.advice||'')}</div></div>`;
+    if(res.band==='E'){
+      html+=`<button class="btn sm" style="margin-top:10px;width:100%;background:#f4b400;color:#3a2a00" onclick="quickModelE()">⭐ 这篇是示范文，一键收进范文库</button>`;
+    }
+    box.innerHTML=html;
+  }
+  if(btn){btn.disabled=false; btn.textContent='🤖 重新评估';}
+  renderDash(); renderRevList();
+  toast('✅ AI 预评估完成：'+res.band+' / '+res.total);
+}
+async function aiGradeAll(aid){
+  const key=LS.get('ea_arkkey','');
+  if(!key){ lockNotice('尚未配置 AI Key。点右上角「⚙️ 云端配置」粘贴火山引擎 ARK Key（ark- 开头）后即可使用 AI 预评估。'); return; }
+  const es=essaysOf(aid).filter(e=>e.type==='text');
+  if(!es.length){ toast('本作业没有可 AI 预评估的文本作文'); return; }
+  const target=es.filter(e=>!(e.ai&&e.ai.ts));
+  if(!target.length){ toast('所有文本作文都已评估过，无需重复'); return; }
+  let done=0, i=0; const CONC=4;
+  showModal(`<h3>🤖 AI 批量预评估</h3><div class="hint">共 ${target.length} 篇，预计 ${Math.ceil(target.length*5/CONC)} 秒左右。</div><div class="hint" id="aiProgBox" style="font-size:15px">正在评估 0/${target.length} …</div><div style="text-align:center;margin-top:10px"><button class="btn ghost" onclick="closeModal()">后台继续（可先做别的）</button></div>`,false);
+  async function worker(){
+    while(i<target.length){
+      const e=target[i++];
+      const r=await aiEval(e.text,'text');
+      if(!r.error){ applyAiToEssay(e,r); saveEss(); }
+      done++;
+      const p=$('#aiProgBox'); if(p)p.textContent='正在评估 '+done+'/'+target.length+' …';
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(CONC,target.length||1)},()=>worker()));
+  closeModal();
+  renderDash(); renderRevList(); renderStats();
+  const modelCands=target.filter(e=>e.ai&&e.ai.band==='E');
+  const errCands=target.filter(e=>e.ai&&(e.ai.band==='D'||e.ai.band==='Em'));
+  if(modelCands.length||errCands.length){
+    showBatchLibModal(modelCands,errCands,target.length);
+  } else {
+    toast('✅ AI 预评估完成 '+done+' 篇，可在单篇评阅里查看档位');
+  }
+}
+/* AI 批量评估后：汇总 E 档示范文 / D·Em 典型错误文，勾选确认收进范文/错误库 */
+let _batchModels=[], _batchErrs=[];
+function showBatchLibModal(models,errs,total){
+  _batchModels=models; _batchErrs=errs;
+  const row=(e,i,kind)=>`<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--line)">
+    <input type="checkbox" id="bk_${kind}_${i}" checked style="margin-top:5px">
+    <div style="flex:1"><b>${esc(e.name||'未署名')}</b> <span class="tag" style="background:${BANDCOL[e.ai.band]||'#8a97ab'};color:#fff">${e.ai.band} · ${e.ai.total}/15</span>
+    <div class="meta" style="margin-top:2px">${esc((e.text||'').slice(0,90))}${(e.text||'').length>90?'…':''}</div>
+    ${e.ai.comment?`<div class="hint" style="margin-top:2px">${esc(e.ai.comment)}</div>`:''}</div></label>`;
+  const mPart=models.length?`<h4 style="margin:10px 0 4px">⭐ 示范文候选（E 档 → 收进范文库）</h4>`+models.map((e,i)=>row(e,i,'m')).join(''):'<div class="hint">本次没有 E 档示范文。</div>';
+  const ePart=errs.length?`<h4 style="margin:12px 0 4px">⚠️ 典型错误文候选（D·Em 档 → 收进错误库）</h4>`+errs.map((e,i)=>row(e,i,'w')).join(''):'<div class="hint">本次没有 D·Em 档典型错误文。</div>';
+  showModal(`<h3>🤖 AI 预评估汇总</h3>
+    <div class="hint">本次共评估 <b>${total}</b> 篇。检测到 <b>${models.length}</b> 篇 E 档示范文、<b>${errs.length}</b> 篇典型错误文。勾选后确认收进对应库（默认匿名，课后可在库里改署名）。</div>
+    <div style="max-height:46vh;overflow:auto;margin:8px 0;padding:0 4px">${mPart}${ePart}</div>
+    <div style="display:flex;gap:10px;margin-top:10px"><button class="btn violet" style="flex:1" onclick="confirmBatchLib()">确认收进所选</button><button class="btn ghost" onclick="closeModal()">取消</button></div>`,false);
+}
+function confirmBatchLib(){
+  if(!isFormal()){lockNotice('沉淀范文 / 错误属于课后正式操作。请先点顶部「🟢 正式批阅模式」解锁后再收进。');return;}
+  let addM=0,addE=0;
+  _batchModels.forEach((e,i)=>{ if($('#bk_m_'+i)&&$('#bk_m_'+i).checked){
+    G.models.unshift({id:uid12(),aid:e.aid,title:(asgOf(e.aid)||{}).title||'',name:'匿名',
+      body:e.text||'', note:('AI：'+((e.ai.comment||'')+' '+(e.ai.advice||'')).trim()), ts:Date.now()}); addM++;
+  }});
+  _batchErrs.forEach((e,i)=>{ if($('#bk_w_'+i)&&$('#bk_w_'+i).checked){
+    G.wrongs.unshift({id:uid12(),q:(e.text||'').slice(0,400),fix:(e.ai.advice||''),type:'综合',ts:Date.now(),aid:e.aid}); addE++;
+  }});
+  if(addM||addE){ saveAll(); toast('⭐ 已收 '+addM+' 篇范文、⚠️ '+addE+' 篇错误文'); }
+  else toast('未勾选任何作文');
+  closeModal(); if(G.v==='lib')renderLib();
+}
+
+/* 本地演示：一键造 2 份学生提交，方便先在本地看效果（仅教师浏览器本地） */
+function demoData(){
+  if(essaysOf('demoA').length){ toast('演示数据已存在'); return; }
+  if(!G.asg.find(a=>a.aid==='demoA')){ G.asg.unshift({aid:'demoA',title:'Unit 4 — 给朋友的建议信（演示）',task:'Directions: Your friend Mary is addicted to her phone. Write a letter to give her advice on how to balance life and technology. (80-100 words)',type:'any',open:true,ts:Date.now()}); }
+  G.ess.push({_id:'x'+uid12(),aid:'demoA',name:'李明',sid:'20260101',type:'text',text:'Dear Mary,\n\nI heard you spend too much time on your phone. I think you should do nothing and let your mind wander sometimes. You can take a walk or read a book. Technology is useful, but we must not lost in it. Please try to turn off your phone one hour before sleep. I believe you can do it.\n\nYours,\nLi Ming',grade:{dims:{task:12,lang:10,format:11,coh:9},total:10.4,band:'P',bandM:'P',status:'published',pubAt:Date.now(),fb:'优点：建议具体，结尾真诚。\n建议：注意时态一致（I think you should do… 全文保持现在时）。',rev:'',prep:'',inline:[{p:1,quote:'',txt:'第二段「do nothing」建议加上引号，避免歧义'}]},ts:Date.now()-3600000,up:Date.now()-3600000});
+  G.ess.push({_id:'x'+uid12(),aid:'demoA',name:'王芳',sid:'20260102',type:'text',text:'Dear Mary, I am sorry to hear about your problem. You ask me how to leave the phone. In my opinion, doing some sports every day is a good choice. Also you can stay with your family and share our interesting life. Remember, the real life is more beautiful than the screen. Best wishes! Yours, Wang Fang',grade:{dims:{task:8,lang:6,format:8,coh:7},total:7.0,band:'C',bandM:'C',status:'published',pubAt:Date.now(),fb:'结构完整，但语法错误较多（leave→leave alone, 段内断句）。需重点修改再提交。',rev:'',prep:'',inline:[{p:0,quote:'leave the phone',txt:'应为 leave alone the phone（放下）'}]},ts:Date.now()-1800000,up:Date.now()-1800000});
+  saveAll(); toast('已生成 2 份演示提交（李明/王芳）'); renderDash(); renderStats(); renderRevList();
+}
+
+/* ================= 启动 ================= */
+if(IS_STU){ initStudentUI(); } else { initTeacherUI(); }
+</script>
+</body>
+</html>

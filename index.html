@@ -241,6 +241,14 @@ window.addEventListener('error',function(e){
   .peer-close{padding:6px 16px;font-size:14px;background:#e35d4f;color:#fff;border:0;border-radius:8px;cursor:pointer}
   .peer-close:hover{filter:brightness(1.08)}
   .peer-frame{flex:1 1 auto;width:100%;border:0;background:#fff;display:block}
+
+  /* ===== 抽签工具「投屏显示」整屏层（盖住页头/上方卡片） ===== */
+  .xmas-embed.xmas-fs{position:fixed;inset:0;z-index:99998;margin:0;padding:0;border-radius:0;overflow:hidden;background:#0b1c2c}
+  .xmas-embed.xmas-fs iframe{position:absolute;inset:0;width:100%;height:100%;max-height:none;border:0;border-radius:0;background:#fff;display:block}
+  body.xmas-fs-on{overflow:hidden}
+  .xmas-fs-exit{position:absolute;top:16px;right:16px;z-index:6;display:none;padding:10px 18px;font-size:15px;font-family:inherit;border-radius:10px;background:rgba(16,35,63,.92);color:#fff;border:1px solid rgba(255,255,255,.45);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+  .xmas-fs-exit:hover{background:rgba(16,35,63,1)}
+  .xmas-embed.xmas-fs .xmas-fs-exit{display:block}
 </style>
 <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
 </head>
@@ -4363,7 +4371,7 @@ const TOOLS = [
   {id:'pick', ico:'🎲', name:'随机点名抽签', desc:'公平抽取', color:'#5AB88C', num:8},
   {id:'timer', ico:'⏱️', name:'课堂计时工具', desc:'正/倒计时', color:'#E89B3C', num:9},
   {id:'qr', ico:'🔳', name:'任务二维码工具', desc:'离线生成', color:'#8B7FD4', num:10},
-  {id:'buzz', ico:'⚡', name:'课堂抢答互动', desc:'抢答排序', color:'#4AA9A5', num:11},
+  {id:'buzz', ico:'⚡', name:'课堂互动小游戏', desc:'抢答排序', color:'#4AA9A5', num:11},
   {id:'board', ico:'🖌️', name:'简易协作白板', desc:'自由书写', color:'#D9A84A', num:12},
   {id:'quiz', ico:'📋', name:'精读随堂小测', desc:'限时自测', color:'#4A90D9', num:13},
   {id:'group', ico:'👥', name:'课堂智能分组', desc:'随机/异质', color:'#5AB88C', num:14},
@@ -4415,6 +4423,50 @@ function closePeer(){
   const f=$('#peerFrame'); if(f) f.src='';
 }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const l=$('#peerLayer'); if(l && l.style.display!=='none') closePeer(); } });
+
+/* ===== 抽签工具「投屏显示」：由工作台整屏接管（盖住页头与上方卡片） ===== */
+function xmasEnterFs(){
+  const box=document.getElementById('xmasEmbed'); if(!box) return;
+  box.classList.add('xmas-fs');
+  document.body.classList.add('xmas-fs-on');
+  const ex=document.getElementById('xmasFsExit'); if(ex) ex.style.display='block';
+  // 浏览器允许时再做一次原生全屏（连浏览器工具栏一起隐藏）；失败也不影响上面的整屏效果
+  try{
+    const rf=box.requestFullscreen||box.webkitRequestFullscreen;
+    if(rf){ const p=rf.call(box); if(p&&p.catch) p.catch(()=>{}); }
+  }catch(e){}
+  toast('已进入投屏全屏 · 按 Esc 或右上角「退出全屏」返回');
+}
+function xmasExitFs(){
+  const box=document.getElementById('xmasEmbed'); if(box) box.classList.remove('xmas-fs');
+  document.body.classList.remove('xmas-fs-on');
+  const ex=document.getElementById('xmasFsExit'); if(ex) ex.style.display='none';
+  try{
+    if(document.fullscreenElement||document.webkitFullscreenElement){
+      const ef=document.exitFullscreen||document.webkitExitFullscreen;
+      if(ef){ const p=ef.call(document); if(p&&p.catch) p.catch(()=>{}); }
+    }
+  }catch(e){}
+}
+window.addEventListener('message',function(e){
+  const d=e.data||{};
+  if(d.type==='xmas-enter-fs') xmasEnterFs();
+  else if(d.type==='xmas-exit-fs') xmasExitFs();
+});
+document.addEventListener('fullscreenchange',function(){
+  if(!document.fullscreenElement && document.body.classList.contains('xmas-fs-on')) xmasExitFs();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape' && document.body.classList.contains('xmas-fs-on')){ e.preventDefault(); xmasExitFs(); }
+});
+(function(){
+  const host=document.getElementById('assistPanel');
+  if(!host||!window.MutationObserver) return;
+  new MutationObserver(function(){
+    if(!document.getElementById('xmasEmbed') && document.body.classList.contains('xmas-fs-on')) xmasExitFs();
+  }).observe(host,{childList:true});
+})();
+
 function openTool(toolId,unitId){
   curTool=toolId; curUnit=unitId; clearNavTimers();
   $('#assistUnits').style.display='none';
@@ -4449,9 +4501,10 @@ const TOOL_IMPL = {
   },
   role:(uid,u)=>{
     if(uid==='u3'){
-      return `<div class="xmas-embed">
-        <iframe src="xmas-roleplay.html?embed=1" title="圣诞角色扮演抽签" loading="lazy"
+      return `      <div class="xmas-embed" id="xmasEmbed">
+        <iframe id="xmasRoleFrame" src="xmas-roleplay.html?embed=1" title="圣诞角色扮演抽签" loading="lazy" allow="fullscreen" allowfullscreen
           style="width:100%;height:min(940px,86vh);border:0;display:block;border-radius:12px;background:#fff;"></iframe>
+        <button class="xmas-fs-exit" id="xmasFsExit" onclick="xmasExitFs()" title="退出全屏（Esc）">✕ 退出全屏</button>
       </div>
       <p class="hint">💡 本单元使用《A Christmas Emergency》角色扮演抽签工具：7 张任务卡（基础/提升/拓展三档难度），卡面含中英文剧情概括，可下拉选择小组数量（1-20），支持班级隔离、放回/不放回模式。工具文件 xmas-roleplay.html 须与本页放在同一目录。</p>`;
     }
@@ -4554,6 +4607,23 @@ const TOOL_IMPL = {
       <div id="qrBox" style="margin-top:14px;text-align:center"></div>${poll}`;
   },
   buzz:(uid,u)=>{
+    if(uid==='u3'){
+      const cls=activeClassId()||'';
+      const clsName=(getClasses().find(c=>c.id===cls)||{}).name||'';
+      const src='christmas-sort-teacher.html?embed=1&cls='+encodeURIComponent(cls)+'&key=christmas-sort';
+      return `<div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <button class="btn green" id="xsStart">开始游戏</button>
+          <button class="btn" id="xsScan">学生扫码</button>
+          <button class="btn" id="xsProject">投屏</button>
+          <button class="btn" id="xsSummary">汇总学情</button>
+          <span style="color:var(--muted);font-size:13px;margin-left:auto">Unit 3 · Human Love · 圣诞故事排序（班级：<b id="xsClsLabel">${escapeHtml(clsName)}</b>）</span>
+        </div>
+        <div id="xsQRBox" style="display:none;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff"></div>
+        <iframe id="xsFrame" src="${src}" allow="autoplay; fullscreen"
+          style="width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#070f14"></iframe>
+      </div>`;
+    }
     const rd=buildReading(uid);
     const q=(rd&&rd.q[0])?rd.q[0].q:'请就本单元主题提出一个观点并论证。';
     return `<div class="qbox" id="buzzQ">❓ ${q}</div>
@@ -4608,7 +4678,10 @@ const TOOL_INIT = {
   },
   board:()=>initBoard(),
   qr:()=>{ const el=$('#pollBase'); if(!el) return; el.value=LS.get('pollBase', POLL_BASE_DEFAULT); genPollQR(); },
-  buzz:()=>{ const r=getRoster(); $('#buzzRoster').innerHTML=r.map(n=>`<button class="btn sm ghost" style="margin:3px" onclick="buzzHit('${n}',this)">${n}</button>`).join(''); },
+  buzz:(uid)=>{
+    if(uid==='u3'){ initXmasSort(); return; }
+    const r=getRoster(); $('#buzzRoster').innerHTML=r.map(n=>`<button class="btn sm ghost" style="margin:3px" onclick="buzzHit('${n}',this)">${n}</button>`).join('');
+  },
 };
 
 /* ---- vocab ---- */
@@ -4908,6 +4981,17 @@ function buzzHit(n,btn){ if(buzzOrder.includes(n))return; buzzOrder.push(n);
     <button class="btn sm green" onclick="this.parentElement.querySelector('.bo').textContent='✅ 答对 +1'">答对</button>`;
   $('#buzzList').appendChild(d); btn.disabled=true; }
 function buzzReset(){ buzzStart(); document.querySelectorAll('#buzzRoster button').forEach(b=>b.disabled=false); }
+// 圣诞故事排序（Unit 3 Human Love）：绑定工作台工具栏四个按钮，通过 postMessage 控制内嵌教师端 iframe
+function initXmasSort(){
+  const f=document.getElementById('xsFrame'); if(!f) return;
+  const post=(t)=>{ try{ f.contentWindow.postMessage({type:t},'*'); }catch(e){} };
+  const b1=document.getElementById('xsStart'), b2=document.getElementById('xsScan'),
+        b3=document.getElementById('xsProject'), b4=document.getElementById('xsSummary');
+  if(b1) b1.onclick=()=>post('start');
+  if(b2) b2.onclick=()=>openSortQR();
+  if(b3) b3.onclick=()=>{ try{ f.requestFullscreen(); }catch(e){ if(f.webkitRequestFullscreen) f.webkitRequestFullscreen(); } };
+  if(b4) b4.onclick=()=>post('summary');
+}
 
 /* ---- whiteboard ---- */
 let wbCtx=null;
@@ -5140,6 +5224,103 @@ function applyStuBase(toolId,uid,inputId){
 function resetStuBase(toolId,uid){
   LS.set('stuBase','');
   genStudentQR(toolId,uid);
+  toast('已恢复自动识别');
+}
+/* ---- Unit 3 圣诞故事排序：工作台原生「学生扫码」面板（二维码指向学生端排序程序） ---- */
+function sortGameBase(){
+  const saved=normStuBase(LS.get('stuBase',''));
+  if(saved) return saved;
+  if(location.protocol==='file:') return '';
+  return location.origin + location.pathname;   // 跟随当前实际部署地址（GitHub Pages / CloudStudio）
+}
+function sortGameURL(clsId){
+  let b=sortGameBase();
+  if(!b) return '';
+  b=b.split('?')[0].replace(/\/+$/,'');
+  if(/index\.html?$/i.test(b)) b=b.replace(/index\.html?$/i,'christmas-sort-student.html');
+  else if(/\.html?$/i.test(b)) b=b.replace(/[^/]+$/,'christmas-sort-student.html');
+  else b=b+'/christmas-sort-student.html';
+  return b+'?key=christmas-sort&cls='+encodeURIComponent(clsId||activeClassId());
+}
+function openSortQR(){
+  const box=document.getElementById('xsQRBox'); if(!box) return;
+  box.style.display='';
+  genSortQR();
+  try{ box.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){}
+}
+function genSortQR(){
+  const box=document.getElementById('xsQRBox'); if(!box) return;
+  const inputId='stuBase_xmasort';
+  const cid=stuClsPick['xmasort']||activeClassId();
+  const cs=getClasses();
+  const clsOpts=cs.map(c=>`<option value="${c.id}"${c.id===cid?' selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const clsName=escapeHtml((cs.find(c=>c.id===cid)||{}).name||'');
+  const clsSel=`<label class="hint" style="white-space:nowrap">班级<select id="stuCls_xmasort" onchange="onSortClsChange(this)" style="margin-left:6px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px">${clsOpts}</select></label>`;
+  const b=sortGameBase();
+  const head=`<div class="hint">学生用手机扫码进入答题（需联网访问 CloudBase）：<b>归属班级：${clsName}</b></div>
+    <div class="flex" style="align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+      ${clsSel}
+      <span class="hint" style="white-space:nowrap">学生访问地址</span>
+      <input id="${inputId}" value="${escapeHtml(b||'')}" placeholder="${escapeHtml(STU_BASE_EXAMPLE)}" style="flex:1;min-width:260px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px">
+      <button class="btn sm" onclick="applySortBase('${inputId}')">应用</button>
+      <button class="btn sm ghost" onclick="resetSortBase()">自动识别</button>
+    </div>`;
+  if(!b){
+    box.innerHTML=head+`<div class="hint" style="margin-top:8px;color:#c53030;line-height:1.7">当前是从本地文件（file://）打开的，二维码会指向你电脑的磁盘路径，手机打不开。<br>请在上面填入线上地址（如 ${escapeHtml(STU_BASE_EXAMPLE)}），或改用离线课堂包的局域网地址（http://192.168.x.x:8080/index.html），再点「应用」。</div>`;
+    return;
+  }
+  const url=sortGameURL(cid);
+  const openUrl=url.replace(/'/g,"\\'");
+  try{
+    const qr=qrcode(0,'M'); qr.addData(url); qr.make();
+    box.innerHTML=head+`
+      <div style="display:inline-block;margin-top:10px;padding:6px 12px;border-radius:999px;color:#fff;font-size:12px;background:#1a3a5c">
+        🎄 圣诞故事排序　|　Unit 3 · Human Love　|　${clsName}</div>
+      <div style="text-align:center;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--line);display:block;margin-top:10px">${qr.createSvgTag({cellSize:6,margin:8})}</div>
+      <div class="hint" style="word-break:break-all;margin-top:8px">${escapeHtml(url)}</div>
+      <div class="flex" style="margin-top:6px"><button class="btn sm ghost" onclick="copyText('${openUrl}')">复制链接</button>
+      <button class="btn sm" onclick="window.open('${openUrl}','_blank')">👀 预览学生页</button></div>`;
+  }catch(e){ box.innerHTML=head+'<div class="hint">二维码生成失败：'+e.message+'</div>'; }
+}
+function onSortClsChange(sel){
+  const pick=sel.value, act=activeClassId();
+  const cs=getClasses();
+  const pn=(cs.find(c=>c.id===pick)||{}).name||pick;
+  const an=(cs.find(c=>c.id===act)||{}).name||act;
+  if(pick!==act){
+    const ok=confirm('你在这里选择的班级「'+pn+'」与「学情分析」当前班级「'+an+'」不一致。\n\n是否把「学情分析」的当前班级也切换为「'+pn+'」？\n（学生扫码提交的成绩会记入「'+pn+'」，学情分析按该班实时汇总）');
+    if(ok){
+      stuClsPick['xmasort']=pick;
+      setActiveClass(pick);
+      const csSel=document.getElementById('classSel'); if(csSel) csSel.value=pick;
+      const lbl=document.getElementById('xsClsLabel'); if(lbl) lbl.textContent=pn;
+      const anaSec=document.getElementById('analytics');
+      if(anaSec&&anaSec.classList.contains('active')){ try{ renderAnalytics(); }catch(e){} }
+      toast('已同步切换班级：'+pn);
+    }else{
+      sel.value=act;
+      stuClsPick['xmasort']=act;
+      toast('已保持与学情分析一致：'+an);
+    }
+  }else{
+    stuClsPick['xmasort']=pick;
+  }
+  // 同步给内嵌教师端：让游戏内「汇总」也按当前班级过滤
+  const f=document.getElementById('xsFrame');
+  if(f){ try{ f.contentWindow.postMessage({type:'setClass',cls:sel.value},'*'); }catch(e){} }
+  genSortQR();
+}
+function applySortBase(inputId){
+  const el=document.getElementById(inputId);
+  const v=normStuBase(el?el.value:'');
+  if(!v){ toast('请填写以 http:// 或 https:// 开头的完整地址'); return; }
+  LS.set('stuBase',v);
+  genSortQR();
+  toast('学生访问地址已保存');
+}
+function resetSortBase(){
+  LS.set('stuBase','');
+  genSortQR();
   toast('已恢复自动识别');
 }
 function copyText(t){ if(navigator.clipboard){ navigator.clipboard.writeText(t).then(()=>toast('链接已复制')).catch(()=>toast('复制失败')); } else { toast('复制失败'); } }
