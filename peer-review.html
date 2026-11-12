@@ -202,7 +202,20 @@ textarea{resize:vertical;}
 .btn-ghost{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;}
 .btn-ghost:hover{background:rgba(201,168,92,.12);}
 .rec-synced{font-size:11px;color:#3b6d11;margin-left:6px;}
-.rec-local{font-size:11px;color:#854f0b;margin-left:6px;}
+  .rec-local{font-size:11px;color:#854f0b;margin-left:6px;}
+
+  /* ===== 演练模式（不记录到云端） ===== */
+  .dmode-row{margin:10px 0 4px;padding:10px 12px;border:1px dashed #c9a85c;border-radius:10px;background:rgba(201,168,92,.10);}
+  body.dmode-on .dmode-row{border-style:solid;background:rgba(201,168,92,.20);box-shadow:0 0 0 2px rgba(201,168,92,.35) inset;}
+  .dmode-sw{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#7a5a16;cursor:pointer;user-select:none;}
+  .dmode-sw input{width:18px;height:18px;cursor:pointer;}
+  .dmode-note{margin-top:6px;font-size:12px;color:#7a6a3a;line-height:1.5;}
+  .dmode-note b{color:#b3400f;}
+  body.dmode-on .topbar{box-shadow:inset 0 4px 0 #c9a85c;}
+  .rec-draft{background:rgba(201,168,92,.12);border-left:4px solid #c9a85c;}
+  .rec-draft-tag{font-size:11px;color:#7a5a16;background:rgba(201,168,92,.30);padding:2px 6px;border-radius:6px;margin-left:6px;}
+  .btn-danger-ghost{background:#fff;color:#b3400f;border:1px solid #e0a98a;}
+  .btn-danger-ghost:hover{background:#fff4ee;}
 </style>
 <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
 </head>
@@ -236,6 +249,13 @@ textarea{resize:vertical;}
         <label for="fSuggest">Suggestions 评语（可选）</label>
         <textarea id="fSuggest" rows="2" placeholder="简短评语…"></textarea>
 
+        <div class="dmode-row" id="dmodeRow">
+          <label class="dmode-sw">
+            <input type="checkbox" id="dmodeToggle">
+            <span>🎭 演练模式（不记录到云端）</span>
+          </label>
+          <div class="dmode-note" id="dmodeNote">开启后提交仅存本机草稿，<b>刷新云端不会显示</b>；正式上课请关闭此开关。</div>
+        </div>
         <button id="btnSubmit" class="btn-primary">提交评分 · Submit</button>
         <div id="formMsg" class="form-msg"></div>
       </div>
@@ -280,6 +300,7 @@ textarea{resize:vertical;}
         <button id="btnRefresh" class="btn-gold">🔄 刷新云端</button>
         <button id="btnResync" class="btn-ghost">⬆ 补传未同步</button>
         <button id="btnClear" class="btn-danger">清空全部数据 · Clear All</button>
+        <button id="btnClearCloud" class="btn-danger-ghost">🗑 清除云端历史</button>
       </div>
     </section>
   </div>
@@ -2697,6 +2718,7 @@ var qrcode = function() {
   const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
             set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
   const K_REV='xmas_review_v1', K_GRP='xmas_groups_v1', K_COE='xmas_coeff_v1';
+  const K_DRAFT='xmas_review_draft_v1', K_DMODE='xmas_review_dmode';
   const DIMS=[
     {key:'lang',label:'Language Performance',max:40,cn:'语言表达'},
     {key:'role',label:'Role Interpretation',max:25,cn:'角色演绎'},
@@ -2709,6 +2731,8 @@ var qrcode = function() {
   let coeff = LS.get(K_COE,{}); if(typeof coeff!=='object'||!coeff) coeff={};
   groups.forEach(g=>{ if(coeff[g]==null) coeff[g]=1.00; });
   let reviews = LS.get(K_REV,[]); if(!Array.isArray(reviews)) reviews=[];
+  let draftReviews = LS.get(K_DRAFT,[]); if(!Array.isArray(draftReviews)) draftReviews=[];
+  let draftMode = LS.get(K_DMODE,false)===true;
 
   /* ---------- CloudBase 云端同步（复用工作台已验证写法） ---------- */
   const CLOUD_ENV='college-english-d9ffi87h93f30a34';
@@ -2847,12 +2871,17 @@ var qrcode = function() {
   /* ---------- records ---------- */
   function renderRecords(){
     const list=$('#recList'); $('#recCount').textContent=reviews.length;
-    if(!reviews.length){ list.innerHTML='<div class="rec-empty">暂无评价记录</div>'; return; }
-    const sorted=reviews.slice().sort((a,b)=>b.ts-a.ts);
+    const all=reviews.concat(draftReviews.map(r=>{ var x=Object.assign({},r); x._draft=true; return x; }));
+    if(!all.length){ list.innerHTML='<div class="rec-empty">暂无评价记录</div>'; return; }
+    const sorted=all.slice().sort((a,b)=>b.ts-a.ts);
     list.innerHTML=sorted.map(r=>{
       const d=new Date(r.ts);
       const t=d.getMonth()+1+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
       const sg=r.suggest?('<div class="sg">💬 '+escapeHtml(r.suggest)+'</div>'):'';
+      if(r._draft){
+        return '<div class="rec-item rec-draft"><div class="rh"><span>'+escapeHtml(r.group)+'</span><span class="rec-draft-tag">🎭演练·仅本机</span><span>原始 '+r.raw+'</span></div>'+
+          '<div class="rs">L'+r.lang+' · R'+r.role+' · T'+r.team+' · V'+r.val+'　'+t+'</div>'+sg+'</div>';
+      }
       const syn=r.synced===true?'<span class="rec-synced">✓云</span>':'<span class="rec-local">本地</span>';
       return '<div class="rec-item"><div class="rh"><span>'+escapeHtml(r.group)+'</span>'+syn+'<span>原始 '+r.raw+'</span></div>'+
         '<div class="rs">L'+r.lang+' · R'+r.role+' · T'+r.team+' · V'+r.val+'　'+t+'</div>'+sg+'</div>';
@@ -2914,17 +2943,23 @@ var qrcode = function() {
       key:g+'|'+ts,
       group:g,lang:s.lang,role:s.role,team:s.team,val:s.val,raw:s.raw,
       suggest:($('#fSuggest').value||'').trim(),ts:ts,synced:false};
-    reviews.push(rec); LS.set(K_REV,reviews);
     // reset
     $('#scoreArea').querySelectorAll('input').forEach(i=>i.value=0);
     $('#fSuggest').value=''; updateRaw();
-    setMsg('✅ 提交成功，感谢评分！','ok');
+    if(draftMode){
+      rec.draft=true;
+      draftReviews.push(rec); LS.set(K_DRAFT,draftReviews);
+      setMsg('🎭 演练：已存本机草稿（不上传云端，刷新云端不会显示）','ok');
+    }else{
+      reviews.push(rec); LS.set(K_REV,reviews);
+      setMsg('✅ 提交成功，感谢评分！','ok');
+      // 异步上云，失败不影响本地（标记未同步，可后续补传）
+      saveCloud(rec).then(ok=>{
+        if(ok){ LS.set(K_REV,reviews); renderRecords(); }
+        else { setMsg('⚠️ 云端暂不可用，已存本机，网络恢复后点「补传未同步」','err'); }
+      });
+    }
     renderRecords(); renderCoeffTable(); renderCharts();
-    // 异步上云，失败不影响本地（标记未同步，可后续补传）
-    saveCloud(rec).then(ok=>{
-      if(ok){ LS.set(K_REV,reviews); renderRecords(); }
-      else { setMsg('⚠️ 云端暂不可用，已存本机，网络恢复后点「补传未同步」','err'); }
-    });
   }
 
   /* ---------- QR ---------- */
@@ -2982,11 +3017,21 @@ var qrcode = function() {
 
   /* ---------- clear ---------- */
   function clearAll(){
-    if(!confirm('确定清空全部评价记录与难度系数吗？此操作不可撤销。\n（小组名称会保留）')) return;
+    if(!confirm('确定清空全部评价记录与难度系数吗？此操作不可撤销。\n（小组名称会保留；含本机演练草稿）')) return;
     reviews=[]; LS.set(K_REV,reviews);
+    draftReviews=[]; LS.set(K_DRAFT,draftReviews);
     coeff={}; groups.forEach(g=>coeff[g]=1.00); LS.set(K_COE,coeff);
     renderRecords(); renderCoeffTable(); renderCharts();
-    setMsg('已清空全部评价数据','ok');
+    setMsg('已清空全部评价数据（含本机演练草稿）','ok');
+  }
+  async function clearCloud(){
+    if(!confirm('确定清除云端「全部」互评历史记录吗？\n此操作不可撤销，将删除云端所有班级/场次的评分。\n（仅清理云端，不影响本机记录）')) return;
+    const app=await cbReady(); if(!app){ setMsg('⚠️ 云端不可用，无法清除（可到 CloudBase 控制台手动清空 peer_reviews 集合）','err'); return; }
+    try{
+      const res=await app.database().collection(COLL).where({}).remove();
+      const n=(res&&res.removed)||0;
+      setMsg(n?('✅ 已清除云端历史记录 '+n+' 条'):('✅ 云端已无记录（或权限限制未删除；可到 CloudBase 控制台手动清空 peer_reviews）'),'ok');
+    }catch(e){ setMsg('⚠️ 清除失败：'+e.message+'（可到 CloudBase 控制台手动清空 peer_reviews 集合）','err'); }
   }
 
   /* ---------- init ---------- */
@@ -3005,8 +3050,20 @@ var qrcode = function() {
     $('#modalClose').addEventListener('click',closeModal);
     $('#modal').addEventListener('click',e=>{ if(e.target===$('#modal')) closeModal(); });
     $('#btnClear').addEventListener('click',clearAll);
+    $('#btnClearCloud').addEventListener('click',clearCloud);
     $('#btnRefresh').addEventListener('click',refreshCloud);
     $('#btnResync').addEventListener('click',resync);
+    // 演练模式开关
+    const dmt=$('#dmodeToggle');
+    if(dmt){
+      dmt.checked=draftMode;
+      dmt.addEventListener('change',e=>{
+        draftMode=!!e.target.checked; LS.set(K_DMODE,draftMode);
+        document.body.classList.toggle('dmode-on',draftMode);
+        setMsg(draftMode?'🎭 演练模式已开启：提交仅存本机草稿，不会上传云端':'已恢复正常模式：提交将保存到云端','ok');
+      });
+    }
+    document.body.classList.toggle('dmode-on',draftMode);
     $('#chart2Group').addEventListener('change',renderCharts);
     // QR
     const proto=location.protocol;
