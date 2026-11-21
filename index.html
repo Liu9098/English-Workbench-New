@@ -5152,7 +5152,7 @@ async function syncContentFromCloud(){
   if(changed){ renderContentUnits(); toast('已从云端恢复单元内容'); }
 }
 /* ---- 学生访问地址：自动识别当前网址；file:// 打开时必须手填，否则二维码指向磁盘路径 ---- */
-const STU_BASE_DEFAULT='https://liu9098.github.io/College-English-Workbench/index.html';
+const STU_BASE_DEFAULT='https://liu9098.github.io/English-Workbench-New/index.html';
 const STU_BASE_EXAMPLE=STU_BASE_DEFAULT;
 function normStuBase(v){
   let b=(v||'').trim().replace(/\/+$/,'');
@@ -5229,7 +5229,8 @@ function resetStuBase(toolId,uid){
 /* ---- Unit 3 圣诞故事排序：工作台原生「学生扫码」面板（二维码指向学生端排序程序） ---- */
 function sortGameBase(){
   const saved=normStuBase(LS.get('stuBase',''));
-  if(saved) return saved;
+  // 兼容旧地址：旧仓库 College-English-Workbench 的学生端文件是 404，自动纠正到新仓库
+  if(saved) return saved.replace(/College-English-Workbench/gi,'English-Workbench-New');
   if(location.protocol==='file:') return '';
   return location.origin + location.pathname;   // 跟随当前实际部署地址（GitHub Pages / CloudStudio）
 }

@@ -199,6 +199,21 @@ textarea{resize:vertical;}
 .qr-cell svg{width:120px;height:120px;display:block;margin:0 auto;}
 .qr-cell .gn{margin-top:6px;font-weight:700;color:var(--navy);font-size:14px;}
 .qr-cell .gl{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+/* 点击小组显示专属二维码 */
+.qr-pick{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;}
+.qr-chip{padding:10px 18px;border:1px solid var(--gold-line);border-radius:999px;background:#fff;color:var(--navy);font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;transition:.12s;}
+.qr-chip:hover{background:var(--gold-soft);}
+.qr-chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.qr-big{min-height:60px;margin:6px 0 16px;padding:14px;border:1px dashed var(--gold);border-radius:12px;background:var(--card2);display:none;align-items:center;gap:18px;}
+.qr-big.show{display:flex;}
+.qr-big .bqr{flex:0 0 auto;}
+.qr-big .bqr svg{width:180px;height:180px;display:block;}
+.qr-big .binfo{flex:1 1 auto;}
+.qr-big .binfo h3{margin:0 0 6px;font-size:20px;color:var(--navy);}
+.qr-big .binfo p{margin:4px 0;font-size:14px;color:var(--ink-soft);}
+.qr-big .binfo .burl{font-size:12px;color:var(--ink-soft);word-break:break-all;}
+.locked-tip{margin:0 0 10px;padding:10px 14px;border-radius:10px;background:rgba(201,168,92,.22);border:1px solid var(--gold);color:var(--navy);font-weight:700;font-size:15px;text-align:center;}
+.locked-tip b{color:var(--danger);}
 .btn-ghost{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;}
 .btn-ghost:hover{background:rgba(201,168,92,.12);}
 .rec-synced{font-size:11px;color:#3b6d11;margin-left:6px;}
@@ -239,7 +254,7 @@ textarea{resize:vertical;}
     <section class="col-left">
       <div class="card">
         <div class="card-h">Student Scoring <span class="cn">学生打分表单</span></div>
-        <label for="fGroup">正在评价的展演小组 / Group</label>
+        <label for="fGroup" id="fGroupLabel">正在评价的展演小组 / Group</label>
         <select id="fGroup"></select>
 
         <div id="scoreArea"></div>
@@ -305,7 +320,9 @@ textarea{resize:vertical;}
     </section>
   </div>
   <section class="qr-wall" id="qrWall">
-    <div class="qr-wall-h"><div class="card-h">📋 小组二维码墙 <span class="cn">Group QR Wall · 哪个小组表演就投影哪一张，学生扫码即进入该组打分</span></div></div>
+    <div class="qr-wall-h"><div class="card-h">📋 小组二维码墙 <span class="cn">Group QR Wall · 点击小组 → 出现该组专属二维码，投影给学生扫对应组打分</span></div></div>
+    <div class="qr-pick" id="qrPick"></div>
+    <div class="qr-big" id="qrBig"></div>
     <div class="qr-wall-grid" id="qrWallGrid"></div>
   </section>
 
@@ -2756,11 +2773,20 @@ var qrcode = function() {
   async function loadCloud(){
     const app=await cbReady(); if(!app) return [];
     try{
-      const res=await app.database().collection(COLL).where({}).get();
-      return (res.data||[]).map(d=>({
-        group:d.group, lang:d.lang, role:d.role, team:d.team, val:d.val,
-        raw:d.raw, suggest:d.suggest||'', key:d.key, ts:d.ts, synced:true, _cloud:true
-      }));
+      const col=app.database().collection(COLL);
+      const out=[]; const PAGE=100; let skip=0;
+      // 分页循环拉取：单次 get 最多 100 条，循环直到取完（突破 100 条上限）
+      for(let i=0;i<50;i++){
+        const res=await col.where({}).orderBy('ts','asc').skip(skip).limit(PAGE).get();
+        const arr=res.data||[];
+        arr.forEach(d=>out.push({
+          group:d.group, lang:d.lang, role:d.role, team:d.team, val:d.val,
+          raw:d.raw, suggest:d.suggest||'', key:d.key||d._id, ts:d.ts, synced:true, _cloud:true
+        }));
+        if(arr.length<PAGE) break;
+        skip+=PAGE;
+      }
+      return out;
     }catch(e){ return []; }
   }
   // 合并本地与云端，按 key 去重，云端优先
@@ -2978,29 +3004,87 @@ var qrcode = function() {
     const src=u||location.href;
     return src.replace(/\?.*$/,'').replace(/\/+$/,'');
   }
+  function groupQRUrl(g){
+    return baseUrl()+'?mode=student&g='+encodeURIComponent(g);
+  }
+  function qrSvg(url,cellSize,margin){
+    try{ const qr=qrcode(0,'M'); qr.addData(url); qr.make(); return qr.createSvgTag({cellSize:cellSize,margin:margin,scalable:true}); }
+    catch(e){ return '<div class="gl">生成失败</div>'; }
+  }
+  function showGroupQR(g){
+    const box=$('#qrBig'); if(!box) return;
+    const url=groupQRUrl(g);
+    box.innerHTML='<div class="bqr">'+qrSvg(url,7,3)+'</div>'+
+      '<div class="binfo"><h3>🎯 '+escapeHtml(g)+' · 学生评分二维码</h3>'+
+      '<p>学生扫此码 → <b>自动锁定为本组打分</b>，不用再选小组、不会扫错组。</p>'+
+      '<p>把这一张投影到大屏幕即可。</p>'+
+      '<div class="burl">'+escapeHtml(url)+'</div></div>';
+    box.classList.add('show');
+  }
   function buildQRWall(){
     const grid=$('#qrWallGrid'); if(!grid) return;
-    const base=baseUrl();
     grid.innerHTML='';
+    // 每个小组一张独立二维码（保留原来的墙）
     groups.forEach(g=>{
-      const url=base+'?mode=student&g='+encodeURIComponent(g);
-      let svg='';
-      try{ const qr=qrcode(0,'M'); qr.addData(url); qr.make(); svg=qr.createSvgTag({cellSize:4,margin:2,scalable:true}); }
-      catch(e){ svg='<div class="gl">生成失败</div>'; }
+      const url=groupQRUrl(g);
       const cell=document.createElement('div'); cell.className='qr-cell';
-      cell.innerHTML=svg+'<div class="gn">'+escapeHtml(g)+'</div><div class="gl">学生扫码打分</div>';
+      cell.innerHTML=qrSvg(url,4,2)+'<div class="gn">'+escapeHtml(g)+'</div><div class="gl">学生扫码打分</div>';
       grid.appendChild(cell);
     });
+    // 小组选择 chips：点击才出现该组专属大二维码
+    const pick=$('#qrPick'); if(pick){
+      pick.innerHTML=groups.map((g,i)=>'<button type="button" class="qr-chip" data-g="'+escapeHtml(g)+'">'+escapeHtml(g)+'</button>').join('');
+      pick.querySelectorAll('.qr-chip').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          pick.querySelectorAll('.qr-chip').forEach(b=>b.classList.remove('on'));
+          btn.classList.add('on');
+          showGroupQR(btn.getAttribute('data-g'));
+        });
+      });
+    }
   }
 
   /* ---------- 云端拉取 / 补传 ---------- */
   async function refreshCloud(){
     setMsg('正在从云端拉取全班评价…','');
     const cloud=await loadCloud();
+    _autoSig=cloudSig(cloud);
     reviews=mergeReviews(cloud);
     LS.set(K_REV,reviews);
     renderRecords(); renderCoeffTable(); renderCharts();
     setMsg('✅ 已从云端拉取 '+cloud.length+' 条，当前共 '+reviews.length+' 条记录','ok');
+  }
+  /* ---- 自动刷新：每 5 秒静默拉取，学生提交后教师端自动上屏 ---- */
+  let _autoSig='', _autoTimer=null, _autoBusy=false;
+  function cloudSig(list){
+    if(!list.length) return '0';
+    let s=list.length+':';
+    list.forEach(r=>{ s+=(r.key||'')+'@'+(r.ts||0)+','; });
+    return s;
+  }
+  async function silentRefresh(){
+    if(_autoBusy) return;
+    // 用户正在输入/下拉时跳过本次，避免打断操作；下一轮会补上
+    const ae=document.activeElement;
+    if(ae && /^(INPUT|SELECT|TEXTAREA)$/i.test(ae.tagName)) return;
+    _autoBusy=true;
+    try{
+      const cloud=await loadCloud();
+      const sig=cloudSig(cloud);
+      if(sig!==_autoSig){
+        _autoSig=sig;
+        reviews=mergeReviews(cloud);
+        LS.set(K_REV,reviews);
+        renderRecords(); renderCoeffTable(); renderCharts();
+      }
+    }catch(e){}
+    _autoBusy=false;
+  }
+  function startAutoRefresh(){
+    if(new URLSearchParams(location.search).get('mode')==='student') return;
+    silentRefresh();
+    if(_autoTimer) clearInterval(_autoTimer);
+    _autoTimer=setInterval(silentRefresh,5000);
   }
   async function resync(){
     const list=reviews.filter(r=>r.synced===false);
@@ -3025,12 +3109,15 @@ var qrcode = function() {
     setMsg('已清空全部评价数据（含本机演练草稿）','ok');
   }
   async function clearCloud(){
-    if(!confirm('确定清除云端「全部」互评历史记录吗？\n此操作不可撤销，将删除云端所有班级/场次的评分。\n（仅清理云端，不影响本机记录）')) return;
+    if(!confirm('确定清空云端互评历史，并同步清空本机记录吗？\n此操作不可撤销：删除云端全部评分 + 本机记录/草稿，避免自动刷新把旧数据又拉回来。')) return;
     const app=await cbReady(); if(!app){ setMsg('⚠️ 云端不可用，无法清除（可到 CloudBase 控制台手动清空 peer_reviews 集合）','err'); return; }
     try{
       const res=await app.database().collection(COLL).where({}).remove();
       const n=(res&&res.removed)||0;
-      setMsg(n?('✅ 已清除云端历史记录 '+n+' 条'):('✅ 云端已无记录（或权限限制未删除；可到 CloudBase 控制台手动清空 peer_reviews）'),'ok');
+      // 本机也清空，避免自动刷新/补传把旧数据带回来
+      reviews=[]; draftReviews=[]; LS.set(K_REV,reviews); LS.set(K_DRAFT,draftReviews);
+      _autoSig=''; renderRecords(); renderCoeffTable(); renderCharts();
+      setMsg(n?('✅ 已清除云端 '+n+' 条并清空本机记录'):('✅ 云端已无记录（或权限限制未删除），本机已清空'),'ok');
     }catch(e){ setMsg('⚠️ 清除失败：'+e.message+'（可到 CloudBase 控制台手动清空 peer_reviews 集合）','err'); }
   }
 
@@ -3072,13 +3159,24 @@ var qrcode = function() {
     $('#qrUrl').addEventListener('input',()=>{ genQR(); buildQRWall(); });
     genQR(); buildQRWall();
     // 学生视图：仅打分，隐藏教师面板 / 顶部单码 / 二维码墙
-    if(new URLSearchParams(location.search).get('mode')==='student'){
+    const qs=new URLSearchParams(location.search);
+    if(qs.get('mode')==='student'){
       const t=$('.col-right'); if(t) t.style.display='none';
       const qb=$('.qr-block'); if(qb) qb.style.display='none';
       const qw=$('#qrWall'); if(qw) qw.style.display='none';
       const fn=$('#footNote'); if(fn) fn.textContent='提交将实时保存到教师云端，教师端可立即查看本组分数。';
       const sub=$('.sub'); if(sub) sub.textContent='Unit 3 · Working Christmas Day · 学生打分端';
+      // 扫码带 g 参数：自动锁定为该组打分，杜绝选错小组
+      const gp=qs.get('g');
+      if(gp && groups.indexOf(gp)>=0){
+        const fs=$('#fGroup'); if(fs){ fs.value=gp; fs.disabled=true; }
+        const lab=$('#fGroupLabel'); if(lab) lab.style.display='none';
+        const tip=document.createElement('div'); tip.className='locked-tip';
+        tip.innerHTML='🎯 你正在为 <b>'+escapeHtml(gp)+'</b> 打分（小组已锁定，请勿选错）';
+        const anchor=$('#fGroup'); if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(tip,anchor);
+      }
     }
+    startAutoRefresh();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
